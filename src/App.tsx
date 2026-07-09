@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import './App.css'
 import { PERSONAS, RUN_PERSONAS, type FlowType, type PersonaKey } from './data/personas'
 import { PayrollWalkthrough } from './components/PayrollWalkthrough'
@@ -17,6 +17,7 @@ function App() {
   }
 
   const [flowType, setFlowType] = useState<FlowType>('run')
+  // Default to 'payroll' but only shown after login
   const [activeMenu, setActiveMenu] = useState<MenuType>('payroll')
   // remember last-selected persona per flow so each menu keeps its own tabs
   const [personaByFlow, setPersonaByFlow] = useState<Record<FlowType, PersonaKey>>({
@@ -27,8 +28,30 @@ function App() {
   const [mode, setMode] = useState<Mode>('flow')
   const [index, setIndex] = useState(0)
   const [sidebarOpen, setSidebarOpen] = useState(() => window.innerWidth > 768)
+  const [portalLoggedIn, setPortalLoggedIn] = useState(() => {
+    const saved = localStorage.getItem('portalLoggedIn')
+    return saved ? JSON.parse(saved) : false
+  })
+  const [portalUserType, setPortalUserType] = useState<'employee' | 'admin' | 'client' | null>(() => {
+    return localStorage.getItem('portalUserType') as 'employee' | 'admin' | 'client' | null
+  })
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false)
+  const profileMenuRef = useRef<HTMLDivElement>(null)
   const current = flowType === 'run' ? RUN_PERSONAS[persona] : PERSONAS[persona]
   const step = current.steps[index]
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (profileMenuRef.current && !profileMenuRef.current.contains(event.target as Node)) {
+        setProfileMenuOpen(false)
+      }
+    }
+
+    if (profileMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+      return () => document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [profileMenuOpen])
 
   const personaTabs: Record<PersonaKey, { label: string; subtitle: string }> =
     flowType === 'run'
@@ -57,10 +80,49 @@ function App() {
     setMode('flow')
   }
 
+  const handlePortalLogout = () => {
+    localStorage.removeItem('portalUserType')
+    localStorage.removeItem('portalLoginTime')
+    localStorage.removeItem('portalLoggedIn')
+    setPortalLoggedIn(false)
+    setPortalUserType(null)
+    setProfileMenuOpen(false)
+  }
+
+  const getInitials = (name: string) => name.split(/\s+/).map((word) => word[0]).join('').slice(0, 2).toUpperCase()
+
+  const getPortalUserName = (): string => {
+    const names: Record<'employee' | 'admin' | 'client', string> = {
+      employee: 'John Doe',
+      admin: 'Admin User',
+      client: 'Client Corp',
+    }
+    return portalUserType ? names[portalUserType] : ''
+  }
+
   const headerSubtitle = activeMenu === 'employee' 
     ? 'HR Suite · Employee Portal'
     : flowType === 'run' ? 'HR Suite · Payroll' : 'HR Suite · Payroll Results'
 
+  // If user is not logged in, show only login page
+  if (!portalLoggedIn) {
+    return (
+      <div className="app-shell login-mode">
+        <EmployeeMenu 
+          onSelectOption={(optionId) => console.log('Selected:', optionId)} 
+          onLoginStateChange={(loggedIn) => {
+            setPortalLoggedIn(loggedIn)
+            if (loggedIn) {
+              setActiveMenu('employee')
+            }
+          }}
+          onUserTypeChange={setPortalUserType} 
+        />
+      </div>
+    )
+  }
+
+  // User is logged in - show full app interface with all menus
   return (
     <div className={`app-shell ${sidebarOpen ? 'sidebar-open' : ''} ${mode === 'doc' ? 'docmode' : ''}`}>
       <header className="shell">
@@ -75,16 +137,41 @@ function App() {
           </button>
           <div className="mark">P</div>
           <div>
-            People & Pay
+            Pynk
             <small>{headerSubtitle}</small>
           </div>
         </div>
         <div className="spacer" />
         <div className="search">Search…</div>
-        <div className="who">
-          <span>{current.who}</span>
-          <span className="avatar">{avatar(current.who)}</span>
-        </div>
+        {activeMenu === 'employee' && portalLoggedIn ? (
+          <div className="profile-menu-container" ref={profileMenuRef}>
+            <button
+              className="profile-avatar"
+              onClick={() => setProfileMenuOpen(!profileMenuOpen)}
+              aria-expanded={profileMenuOpen}
+              aria-label="Profile menu"
+              title="Click to open menu"
+            >
+              <span className="avatar-initials">{getInitials(getPortalUserName())}</span>
+            </button>
+            {profileMenuOpen && (
+              <div className="profile-dropdown">
+                <div className="profile-dropdown-header">
+                  <span className="dropdown-user-name">{getPortalUserName()}</span>
+                  <span className="dropdown-user-role">{portalUserType ? portalUserType.charAt(0).toUpperCase() + portalUserType.slice(1) : ''}</span>
+                </div>
+                <button className="dropdown-logout-btn" onClick={handlePortalLogout}>
+                  Logout
+                </button>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="who">
+            <span>{current.who}</span>
+            <span className="avatar">{avatar(current.who)}</span>
+          </div>
+        )}
       </header>
 
       <nav className="tabs" role="tablist" aria-label="Payroll perspective" style={{ display: activeMenu === 'employee' ? 'none' : 'flex' }}>
@@ -113,6 +200,7 @@ function App() {
         </div>
       </nav>
 
+      <>
       {sidebarOpen && (
         <div className="sidebar-backdrop" onClick={() => setSidebarOpen(false)} aria-hidden="true" />
       )}
@@ -146,7 +234,7 @@ function App() {
 
         <main className="wrap" id="root">
         {activeMenu === 'employee' ? (
-          <EmployeeMenu onSelectOption={(optionId) => console.log('Selected:', optionId)} />
+          <EmployeeMenu onSelectOption={(optionId) => console.log('Selected:', optionId)} onLoginStateChange={setPortalLoggedIn} onUserTypeChange={setPortalUserType} />
         ) : flowType === 'run' ? (
           <PayrollWalkthrough
             current={current}
@@ -168,6 +256,7 @@ function App() {
         )}
       </main>
       </div>
+      </>
     </div>
   )
 }
