@@ -3,10 +3,12 @@ import './App.css'
 import { PERSONAS, RUN_PERSONAS, type FlowType, type PersonaKey } from './data/personas'
 import { PayrollWalkthrough } from './components/PayrollWalkthrough'
 import { PayrollOutputWalkthrough } from './components/PayrollOutputWalkthrough'
+import { EmployeeMenu } from './components/EmployeeMenu'
 
 const avatar = (name: string) => name.split(/\s+/).map((word) => word[0]).join('').slice(0, 2).toUpperCase()
 
 type Mode = 'flow' | 'doc'
+type MenuType = 'payroll' | 'results' | 'employee'
 
 function App() {
   const defaultPersonaByFlow: Record<FlowType, PersonaKey> = {
@@ -15,6 +17,7 @@ function App() {
   }
 
   const [flowType, setFlowType] = useState<FlowType>('run')
+  const [activeMenu, setActiveMenu] = useState<MenuType>('payroll')
   // remember last-selected persona per flow so each menu keeps its own tabs
   const [personaByFlow, setPersonaByFlow] = useState<Record<FlowType, PersonaKey>>({
     run: defaultPersonaByFlow.run,
@@ -54,7 +57,9 @@ function App() {
     setMode('flow')
   }
 
-  const headerSubtitle = flowType === 'run' ? 'HR Suite · Payroll' : 'HR Suite · Payroll Results'
+  const headerSubtitle = activeMenu === 'employee' 
+    ? 'HR Suite · Employee Portal'
+    : flowType === 'run' ? 'HR Suite · Payroll' : 'HR Suite · Payroll Results'
 
   return (
     <div className={`app-shell ${sidebarOpen ? 'sidebar-open' : ''} ${mode === 'doc' ? 'docmode' : ''}`}>
@@ -82,7 +87,7 @@ function App() {
         </div>
       </header>
 
-      <nav className="tabs" role="tablist" aria-label="Payroll perspective">
+      <nav className="tabs" role="tablist" aria-label="Payroll perspective" style={{ display: activeMenu === 'employee' ? 'none' : 'flex' }}>
         {(['employee', 'admin', 'manager'] as PersonaKey[]).map((key) => (
           <button
             key={key}
@@ -118,22 +123,31 @@ function App() {
           </button>
           <button
             type="button"
-            className={`menu-btn ${flowType === 'run' ? 'active' : ''}`}
-            onClick={() => { selectFlowType('run'); if (window.innerWidth <= 768) setSidebarOpen(false) }}
+            className={`menu-btn ${activeMenu === 'payroll' ? 'active' : ''}`}
+            onClick={() => { setActiveMenu('payroll'); selectFlowType('run'); setSidebarOpen(false) }}
           >
             Payroll
           </button>
           <button
             type="button"
-            className={`menu-btn ${flowType === 'output' ? 'active' : ''}`}
-            onClick={() => { selectFlowType('output'); if (window.innerWidth <= 768) setSidebarOpen(false) }}
+            className={`menu-btn ${activeMenu === 'results' ? 'active' : ''}`}
+            onClick={() => { setActiveMenu('results'); selectFlowType('output'); setSidebarOpen(false) }}
           >
             Payroll results
+          </button>
+          <button
+            type="button"
+            className={`menu-btn ${activeMenu === 'employee' ? 'active' : ''}`}
+            onClick={() => { setActiveMenu('employee'); setSidebarOpen(false) }}
+          >
+            Employee
           </button>
         </aside>
 
         <main className="wrap" id="root">
-        {flowType === 'run' ? (
+        {activeMenu === 'employee' ? (
+          <EmployeeMenu onSelectOption={(optionId) => console.log('Selected:', optionId)} />
+        ) : flowType === 'run' ? (
           <PayrollWalkthrough
             current={current}
             step={step}
