@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
 type UserType = 'employee' | 'admin' | 'client'
 type Module = 'dashboard' | 'time-entry' | 'leave' | 'my-pay' | 'documents' | 'profile' | 'notifications'
@@ -154,6 +154,126 @@ const MAX_RANGE_DAYS = 31
 
 const timeEntryTabs = ['My Timesheet', 'Calendar', 'Time History', 'Approvals'] as const
 const leaveTabs = ['My Leave', 'Apply Leave', 'Leave Balance', 'Leave History'] as const
+const myPayTabs = ['Overview', 'Payslips', 'Salary Breakdown', 'Tax Documents', 'Bank Details', 'Payment History'] as const
+type MyPayTab = (typeof myPayTabs)[number]
+
+// ── My Pay Types ──
+interface Payslip {
+  id: string
+  month: string
+  payDate: string
+  grossSalary: number
+  netSalary: number
+  status: 'Paid' | 'Pending' | 'Processing'
+}
+
+interface SalaryEarning {
+  label: string
+  amount: number
+  color: string
+}
+
+interface SalaryDeduction {
+  label: string
+  amount: number
+  color: string
+}
+
+interface TaxDocument {
+  id: string
+  name: string
+  financialYear: string
+  description: string
+}
+
+interface BankDetails {
+  bankName: string
+  accountNumber: string
+  ifscCode: string
+  accountHolderName: string
+  verified: boolean
+}
+
+interface BankUpdateForm {
+  bankName: string
+  accountNumber: string
+  ifscCode: string
+  accountHolderName: string
+  reason: string
+}
+
+interface PaymentHistoryItem {
+  id: string
+  month: string
+  payDate: string
+  grossSalary: number
+  netSalary: number
+  paymentMode: string
+  transactionId: string
+  status: 'Credited' | 'Pending' | 'Failed'
+}
+
+// ── My Pay Seed Data ──
+const payslipSeedData: Payslip[] = [
+  { id: 'ps-001', month: 'June 2025', payDate: '30 Jun 2025', grossSalary: 98500, netSalary: 68750, status: 'Paid' },
+  { id: 'ps-002', month: 'May 2025', payDate: '31 May 2025', grossSalary: 98500, netSalary: 68750, status: 'Paid' },
+  { id: 'ps-003', month: 'April 2025', payDate: '30 Apr 2025', grossSalary: 98500, netSalary: 68750, status: 'Paid' },
+  { id: 'ps-004', month: 'March 2025', payDate: '31 Mar 2025', grossSalary: 95000, netSalary: 66300, status: 'Paid' },
+  { id: 'ps-005', month: 'February 2025', payDate: '28 Feb 2025', grossSalary: 95000, netSalary: 66300, status: 'Paid' },
+  { id: 'ps-006', month: 'January 2025', payDate: '31 Jan 2025', grossSalary: 95000, netSalary: 66300, status: 'Paid' },
+  { id: 'ps-007', month: 'December 2024', payDate: '31 Dec 2024', grossSalary: 95000, netSalary: 66300, status: 'Paid' },
+  { id: 'ps-008', month: 'November 2024', payDate: '30 Nov 2024', grossSalary: 92000, netSalary: 64100, status: 'Paid' },
+  { id: 'ps-009', month: 'October 2024', payDate: '31 Oct 2024', grossSalary: 92000, netSalary: 64100, status: 'Paid' },
+  { id: 'ps-010', month: 'September 2024', payDate: '30 Sep 2024', grossSalary: 92000, netSalary: 64100, status: 'Paid' },
+  { id: 'ps-011', month: 'August 2024', payDate: '31 Aug 2024', grossSalary: 90000, netSalary: 62500, status: 'Paid' },
+  { id: 'ps-012', month: 'July 2024', payDate: '31 Jul 2024', grossSalary: 90000, netSalary: 62500, status: 'Paid' },
+]
+
+const salaryEarnings: SalaryEarning[] = [
+  { label: 'Basic Salary', amount: 45000, color: '#5a7dff' },
+  { label: 'House Rent Allowance (HRA)', amount: 18000, color: '#8f63ff' },
+  { label: 'Special Allowance', amount: 15000, color: '#f48e3f' },
+  { label: 'Conveyance Allowance', amount: 3200, color: '#f4723f' },
+  { label: 'Performance Bonus', amount: 5000, color: '#48b36a' },
+  { label: 'Employer PF Contribution', amount: 7500, color: '#56c2d6' },
+]
+
+const salaryDeductions: SalaryDeduction[] = [
+  { label: 'Employee PF Contribution', amount: 4000, color: '#8f63ff' },
+  { label: 'Professional Tax', amount: 200, color: '#f48e3f' },
+  { label: 'Income Tax (TDS)', amount: 9000, color: '#f4b03f' },
+  { label: 'Health Insurance', amount: 1500, color: '#e74c3c' },
+  { label: 'Other Deductions', amount: 15050, color: '#5a4fbf' },
+]
+
+const taxDocumentSeedData: TaxDocument[] = [
+  { id: 'td-001', name: 'Form 16', financialYear: '2024-25', description: 'Annual tax statement as per income tax act.' },
+  { id: 'td-002', name: 'Tax Certificate', financialYear: '2024-25', description: 'Certificate for tax deducted at source.' },
+  { id: 'td-003', name: 'Annual Income Statement', financialYear: '2024-25', description: 'Summary of your income for the year.' },
+  { id: 'td-004', name: 'Investment Proof Declaration', financialYear: '2024-25', description: 'Proof of your declared investments.' },
+]
+
+const bankDetailsSeed: BankDetails = {
+  bankName: 'HDFC Bank Limited',
+  accountNumber: 'XXXX XXXX 4589',
+  ifscCode: 'HDFC0001234',
+  accountHolderName: 'John Doe',
+  verified: true,
+}
+
+const paymentHistorySeed: PaymentHistoryItem[] = [
+  { id: 'ph-001', month: 'June 2025', payDate: '30 Jun 2025', grossSalary: 98500, netSalary: 68750, paymentMode: 'NEFT', transactionId: 'NEFT202506300001', status: 'Credited' },
+  { id: 'ph-002', month: 'May 2025', payDate: '31 May 2025', grossSalary: 98500, netSalary: 68750, paymentMode: 'NEFT', transactionId: 'NEFT202505310001', status: 'Credited' },
+  { id: 'ph-003', month: 'April 2025', payDate: '30 Apr 2025', grossSalary: 98500, netSalary: 68750, paymentMode: 'NEFT', transactionId: 'NEFT202504300001', status: 'Credited' },
+  { id: 'ph-004', month: 'March 2025', payDate: '31 Mar 2025', grossSalary: 95000, netSalary: 66300, paymentMode: 'NEFT', transactionId: 'NEFT202503310001', status: 'Credited' },
+  { id: 'ph-005', month: 'February 2025', payDate: '28 Feb 2025', grossSalary: 95000, netSalary: 66300, paymentMode: 'NEFT', transactionId: 'NEFT202502280001', status: 'Credited' },
+  { id: 'ph-006', month: 'January 2025', payDate: '31 Jan 2025', grossSalary: 95000, netSalary: 66300, paymentMode: 'NEFT', transactionId: 'NEFT202501310001', status: 'Credited' },
+]
+
+const formatCurrency = (amount: number) =>
+  `₹ ${amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`
+
+const maskAccountNumber = (num: string) => num
 
 const statusLabel: Record<TimeEntryStatus, string> = {
   submitted: 'Submitted',
@@ -894,6 +1014,27 @@ export function EmployeePortalFlow(_props: EmployeePortalFlowProps) {
 
   const [activeTimeEntryTab, setActiveTimeEntryTab] = useState<(typeof timeEntryTabs)[number]>('My Timesheet')
   const [activeLeaveTab, setActiveLeaveTab] = useState<(typeof leaveTabs)[number]>('My Leave')
+  const [activePayTab, setActivePayTab] = useState<MyPayTab>('Overview')
+
+  // My Pay state
+  const [payslipYear, setPayslipYear] = useState('2025')
+  const [payslipSearchMonth, setPayslipSearchMonth] = useState('')
+  const [payslipPage, setPayslipPage] = useState(1)
+  const [selectedPayslipForView, setSelectedPayslipForView] = useState<Payslip | null>(null)
+  const [salaryBreakdownMonth, setSalaryBreakdownMonth] = useState('June 2025')
+  const [bankUpdateModalOpen, setBankUpdateModalOpen] = useState(false)
+  const [bankUpdateForm, setBankUpdateForm] = useState<BankUpdateForm>({
+    bankName: '',
+    accountNumber: '',
+    ifscCode: '',
+    accountHolderName: '',
+    reason: '',
+  })
+  const [bankUpdateError, setBankUpdateError] = useState('')
+  const [bankUpdateSuccess, setBankUpdateSuccess] = useState(false)
+  const [bankUpdateRequestSent, setBankUpdateRequestSent] = useState(false)
+  const [payHistoryStatusFilter, setPayHistoryStatusFilter] = useState<'All' | 'Credited' | 'Pending' | 'Failed'>('All')
+  const payTabRef = useRef<HTMLDivElement>(null)
   const [timeEntryStore, setTimeEntryStore] = useState<TimeEntryStore>(() => loadTimeEntryStore())
   const activeRange = timeEntryStore.ranges[timeEntryStore.activeRangeKey]
   const [calendarMonthDate, setCalendarMonthDate] = useState(() => startOfMonth(fromIso(activeRange.fromDateISO)))
@@ -2475,6 +2616,666 @@ export function EmployeePortalFlow(_props: EmployeePortalFlowProps) {
                   </div>
                 </div>
               )}
+            </div>
+          ) : currentModule === 'my-pay' ? (
+            <div className="pay-shell">
+              {/* Pay Tab Navigation */}
+              <div className="pay-top" ref={payTabRef}>
+                <div className="pay-tabs" role="tablist" aria-label="My Pay tabs">
+                  {myPayTabs.map((tab) => (
+                    <button
+                      key={tab}
+                      type="button"
+                      className={`pay-tab ${activePayTab === tab ? 'active' : ''}`}
+                      onClick={() => setActivePayTab(tab)}
+                      role="tab"
+                      aria-selected={activePayTab === tab}
+                    >
+                      {tab}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* ── OVERVIEW TAB ── */}
+              {activePayTab === 'Overview' && (() => {
+                const ytdGross = payslipSeedData.filter(p => p.status === 'Paid').reduce((s, p) => s + p.grossSalary, 0)
+                const ytdNet = payslipSeedData.filter(p => p.status === 'Paid').reduce((s, p) => s + p.netSalary, 0)
+                const ytdTax = salaryDeductions.find(d => d.label === 'Income Tax (TDS)')?.amount ?? 0
+                const ytdDeductions = salaryDeductions.reduce((s, d) => s + d.amount, 0)
+                const recentPayslips = payslipSeedData.slice(0, 3)
+                return (
+                  <div className="pay-overview-grid">
+                    {/* Current Month Card */}
+                    <section className="pay-card pay-current-month" aria-label="Current month salary">
+                      <div className="pay-card-label">Current Month <span className="pay-month-badge">(June 2025)</span></div>
+                      <div className="pay-net-row">
+                        <div>
+                          <div className="pay-net-label">Net Salary</div>
+                          <div className="pay-net-amount">{formatCurrency(68750)}</div>
+                        </div>
+                        <span className="pay-status-chip paid">Paid</span>
+                      </div>
+                      <div className="pay-meta-row">
+                        <div><span>Gross Salary</span><strong>{formatCurrency(98500)}</strong></div>
+                        <div><span>Pay Date</span><strong>30 Jun 2025</strong></div>
+                        <div><span>Next Payday</span><strong>31 Jul 2025</strong></div>
+                      </div>
+                    </section>
+
+                    {/* Quick Actions Card */}
+                    <section className="pay-card pay-quick-actions" aria-label="Quick actions">
+                      <div className="pay-card-label">Quick Actions</div>
+                      <div className="pay-actions-list">
+                        <button type="button" className="pay-action-btn" onClick={() => {
+                          setSelectedPayslipForView(payslipSeedData[0])
+                          setActivePayTab('Payslips')
+                        }}>
+                          <span className="pay-action-icon">📄</span>
+                          <span>View Payslip</span>
+                        </button>
+                        <button type="button" className="pay-action-btn" onClick={() => setActivePayTab('Payslips')}>
+                          <span className="pay-action-icon">⬇️</span>
+                          <span>Download Payslip</span>
+                        </button>
+                        <button type="button" className="pay-action-btn" onClick={() => setActivePayTab('Salary Breakdown')}>
+                          <span className="pay-action-icon">📊</span>
+                          <span>View Salary Breakdown</span>
+                        </button>
+                      </div>
+                    </section>
+
+                    {/* Employment Details Card */}
+                    <section className="pay-card pay-emp-details" aria-label="Employment details">
+                      <div className="pay-card-label">Employment Details</div>
+                      <dl className="pay-emp-dl">
+                        <div><dt>Employment Country</dt><dd>🇮🇳 India</dd></div>
+                        <div><dt>Payroll Entity</dt><dd>Pynk India Pvt Ltd</dd></div>
+                        <div><dt>Payroll Cycle</dt><dd>Monthly</dd></div>
+                        <div><dt>Next Payday</dt><dd>31 Jul 2025</dd></div>
+                      </dl>
+                    </section>
+
+                    {/* Year To Date Card */}
+                    <section className="pay-card pay-ytd" aria-label="Year to date">
+                      <div className="pay-card-label">Year To Date <span className="pay-fy-label">(FY 2025-26)</span></div>
+                      <div className="pay-ytd-grid">
+                        <div className="pay-ytd-item">
+                          <span>Gross Earnings</span>
+                          <strong className="pay-ytd-gross">{formatCurrency(ytdGross)}</strong>
+                        </div>
+                        <div className="pay-ytd-item">
+                          <span>Net Earnings</span>
+                          <strong className="pay-ytd-net">{formatCurrency(ytdNet)}</strong>
+                        </div>
+                        <div className="pay-ytd-item">
+                          <span>Total Tax</span>
+                          <strong className="pay-ytd-tax">{formatCurrency(ytdTax * 12)}</strong>
+                        </div>
+                        <div className="pay-ytd-item">
+                          <span>Total Deductions</span>
+                          <strong>{formatCurrency(ytdDeductions * 12)}</strong>
+                        </div>
+                      </div>
+                      <button type="button" className="pay-view-link" onClick={() => setActivePayTab('Payment History')}>
+                        View full Year To Date details →
+                      </button>
+                    </section>
+
+                    {/* Recent Payslips Card */}
+                    <section className="pay-card pay-recent" aria-label="Recent payslips">
+                      <div className="pay-card-label">Recent Payslips</div>
+                      <div className="pay-recent-list">
+                        {recentPayslips.map((ps) => (
+                          <div key={ps.id} className="pay-recent-row">
+                            <span className="pay-recent-month">{ps.month}</span>
+                            <span className="pay-recent-date">{ps.payDate}</span>
+                            <span className={`pay-status-chip ${ps.status.toLowerCase()}`}>{ps.status}</span>
+                            <button type="button" className="pay-view-link" onClick={() => {
+                              setSelectedPayslipForView(ps)
+                              setActivePayTab('Payslips')
+                            }}>View</button>
+                          </div>
+                        ))}
+                      </div>
+                      <button type="button" className="pay-view-link" onClick={() => setActivePayTab('Payslips')}>
+                        View all payslips →
+                      </button>
+                    </section>
+                  </div>
+                )
+              })()}
+
+              {/* ── PAYSLIPS TAB ── */}
+              {activePayTab === 'Payslips' && (() => {
+                const years = [...new Set(payslipSeedData.map(p => p.month.split(' ')[1]))]
+                const ITEMS_PER_PAGE = 6
+                const filtered = payslipSeedData.filter(p => {
+                  const yearMatch = p.month.includes(payslipYear)
+                  const monthMatch = payslipSearchMonth === '' || p.month.toLowerCase().includes(payslipSearchMonth.toLowerCase())
+                  return yearMatch && monthMatch
+                })
+                const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE))
+                const safePage = Math.min(payslipPage, totalPages)
+                const pageItems = filtered.slice((safePage - 1) * ITEMS_PER_PAGE, safePage * ITEMS_PER_PAGE)
+
+                return (
+                  <div className="pay-payslips-shell">
+                    {/* Filters */}
+                    <div className="pay-payslips-filters">
+                      <label className="pay-filter-group">
+                        <span>Year</span>
+                        <select
+                          id="payslip-year-select"
+                          value={payslipYear}
+                          onChange={e => { setPayslipYear(e.target.value); setPayslipPage(1) }}
+                        >
+                          {years.map(y => <option key={y} value={y}>{y}</option>)}
+                        </select>
+                      </label>
+                      <label className="pay-filter-group">
+                        <span>Search by month</span>
+                        <div className="pay-search-input">
+                          <input
+                            id="payslip-month-search"
+                            type="text"
+                            placeholder="e.g. June"
+                            value={payslipSearchMonth}
+                            onChange={e => { setPayslipSearchMonth(e.target.value); setPayslipPage(1) }}
+                          />
+                          <span className="pay-search-icon">📅</span>
+                        </div>
+                      </label>
+                    </div>
+
+                    {/* Table */}
+                    <section className="pay-table-card" aria-label="Payslips table">
+                      <div className="pay-table-wrap">
+                        <table className="pay-table">
+                          <thead>
+                            <tr>
+                              <th>Month</th>
+                              <th>Pay Date</th>
+                              <th>Gross Salary</th>
+                              <th>Net Salary</th>
+                              <th>Status</th>
+                              <th>Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {pageItems.map(ps => (
+                              <tr key={ps.id}>
+                                <td>{ps.month}</td>
+                                <td>{ps.payDate}</td>
+                                <td>{formatCurrency(ps.grossSalary)}</td>
+                                <td>{formatCurrency(ps.netSalary)}</td>
+                                <td><span className={`pay-status-chip ${ps.status.toLowerCase()}`}>{ps.status}</span></td>
+                                <td>
+                                  <div className="pay-table-actions">
+                                    <button type="button" className="pay-action-link" onClick={() => setSelectedPayslipForView(ps)}>
+                                      👁️ View
+                                    </button>
+                                    <button type="button" className="pay-action-link" onClick={() => {
+                                      const csv = `Month,Pay Date,Gross Salary,Net Salary,Status\n${ps.month},${ps.payDate},${ps.grossSalary},${ps.netSalary},${ps.status}`
+                                      const blob = new Blob([csv], { type: 'text/csv' })
+                                      const url = URL.createObjectURL(blob)
+                                      const a = document.createElement('a')
+                                      a.href = url
+                                      a.download = `payslip-${ps.month.replace(' ', '-')}.csv`
+                                      a.click()
+                                      URL.revokeObjectURL(url)
+                                    }}>
+                                      ⬇️ Download
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                            {pageItems.length === 0 && (
+                              <tr><td colSpan={6} className="pay-empty-row">No payslips found for the selected filters.</td></tr>
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+
+                      {/* Pagination */}
+                      <div className="pay-pagination">
+                        <span className="pay-pagination-info">Showing {Math.min((safePage - 1) * ITEMS_PER_PAGE + 1, filtered.length)} to {Math.min(safePage * ITEMS_PER_PAGE, filtered.length)} of {filtered.length} payslips</span>
+                        <div className="pay-pagination-controls">
+                          <button type="button" className="pay-page-btn" disabled={safePage === 1} onClick={() => setPayslipPage(p => Math.max(1, p - 1))}>‹</button>
+                          {Array.from({ length: totalPages }, (_, i) => i + 1).map(pg => (
+                            <button
+                              key={pg}
+                              type="button"
+                              className={`pay-page-btn ${safePage === pg ? 'active' : ''}`}
+                              onClick={() => setPayslipPage(pg)}
+                            >{pg}</button>
+                          ))}
+                          <button type="button" className="pay-page-btn" disabled={safePage === totalPages} onClick={() => setPayslipPage(p => Math.min(totalPages, p + 1))}>›</button>
+                        </div>
+                      </div>
+                    </section>
+
+                    {/* Payslip View Modal */}
+                    {selectedPayslipForView && (
+                      <div className="pay-modal-backdrop" role="presentation" onClick={() => setSelectedPayslipForView(null)}>
+                        <div
+                          className="pay-modal pay-payslip-modal"
+                          role="dialog"
+                          aria-modal="true"
+                          aria-label={`Payslip for ${selectedPayslipForView.month}`}
+                          onClick={e => e.stopPropagation()}
+                        >
+                          <div className="pay-modal-head">
+                            <div>
+                              <h3>Payslip · {selectedPayslipForView.month}</h3>
+                              <p className="pay-modal-sub">Pynk India Pvt Ltd · John Doe</p>
+                            </div>
+                            <button type="button" className="pay-modal-close" onClick={() => setSelectedPayslipForView(null)}>✕</button>
+                          </div>
+
+                          <div className="payslip-view-grid">
+                            <div className="payslip-section">
+                              <h4>Earnings</h4>
+                              {salaryEarnings.map(e => (
+                                <div key={e.label} className="payslip-row">
+                                  <span><i className="pay-dot" style={{ background: e.color }} />{e.label}</span>
+                                  <strong>{formatCurrency(e.amount)}</strong>
+                                </div>
+                              ))}
+                              <div className="payslip-total-row">
+                                <span>Total Earnings</span>
+                                <strong>{formatCurrency(salaryEarnings.reduce((s, e) => s + e.amount, 0))}</strong>
+                              </div>
+                            </div>
+                            <div className="payslip-section">
+                              <h4>Deductions</h4>
+                              {salaryDeductions.map(d => (
+                                <div key={d.label} className="payslip-row">
+                                  <span><i className="pay-dot" style={{ background: d.color }} />{d.label}</span>
+                                  <strong>{formatCurrency(d.amount)}</strong>
+                                </div>
+                              ))}
+                              <div className="payslip-total-row">
+                                <span>Total Deductions</span>
+                                <strong>{formatCurrency(salaryDeductions.reduce((s, d) => s + d.amount, 0))}</strong>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="payslip-net-row">
+                            <span>Net Salary (Take Home)</span>
+                            <strong>{formatCurrency(selectedPayslipForView.netSalary)}</strong>
+                          </div>
+
+                          <div className="pay-modal-actions">
+                            <button type="button" className="btn" onClick={() => setSelectedPayslipForView(null)}>Close</button>
+                            <button type="button" className="btn btn-primary" onClick={() => {
+                              const ps = selectedPayslipForView
+                              const csv = `Month,Pay Date,Gross Salary,Net Salary,Status\n${ps.month},${ps.payDate},${ps.grossSalary},${ps.netSalary},${ps.status}`
+                              const blob = new Blob([csv], { type: 'text/csv' })
+                              const url = URL.createObjectURL(blob)
+                              const a = document.createElement('a')
+                              a.href = url
+                              a.download = `payslip-${ps.month.replace(' ', '-')}.csv`
+                              a.click()
+                              URL.revokeObjectURL(url)
+                            }}>⬇️ Download PDF</button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )
+              })()}
+
+              {/* ── SALARY BREAKDOWN TAB ── */}
+              {activePayTab === 'Salary Breakdown' && (() => {
+                const totalEarnings = salaryEarnings.reduce((s, e) => s + e.amount, 0)
+                const totalDeductions = salaryDeductions.reduce((s, d) => s + d.amount, 0)
+                const netSalary = totalEarnings - totalDeductions
+                const months = payslipSeedData.map(p => p.month)
+                return (
+                  <div className="pay-breakdown-shell">
+                    <div className="pay-breakdown-sidebar">
+                      <label className="pay-filter-group">
+                        <span>Select Month</span>
+                        <select
+                          id="breakdown-month-select"
+                          value={salaryBreakdownMonth}
+                          onChange={e => setSalaryBreakdownMonth(e.target.value)}
+                        >
+                          {months.map(m => <option key={m} value={m}>{m}</option>)}
+                        </select>
+                      </label>
+
+                      <div className="pay-breakdown-summary">
+                        <div className="pay-breakdown-kpi">
+                          <span>Gross Salary</span>
+                          <strong>{formatCurrency(totalEarnings)}</strong>
+                        </div>
+                        <div className="pay-breakdown-kpi">
+                          <span>Total Deductions</span>
+                          <strong>{formatCurrency(totalDeductions)}</strong>
+                        </div>
+                        <div className="pay-breakdown-kpi net">
+                          <span>Net Salary (Take Home)</span>
+                          <strong>{formatCurrency(netSalary)}</strong>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="pay-breakdown-main">
+                      <h3>Salary Breakdown</h3>
+                      <div className="pay-breakdown-grid">
+                        <section className="pay-breakdown-card" aria-label="Earnings">
+                          <h4>Earnings</h4>
+                          {salaryEarnings.map(e => (
+                            <div key={e.label} className="pay-breakdown-row">
+                              <span><i className="pay-dot" style={{ background: e.color }} />{e.label}</span>
+                              <strong>{formatCurrency(e.amount)}</strong>
+                            </div>
+                          ))}
+                          <div className="pay-breakdown-total">
+                            <span>Total Earnings</span>
+                            <strong>{formatCurrency(totalEarnings)}</strong>
+                          </div>
+                        </section>
+
+                        <section className="pay-breakdown-card" aria-label="Deductions">
+                          <h4>Deductions</h4>
+                          {salaryDeductions.map(d => (
+                            <div key={d.label} className="pay-breakdown-row">
+                              <span><i className="pay-dot" style={{ background: d.color }} />{d.label}</span>
+                              <strong>{formatCurrency(d.amount)}</strong>
+                            </div>
+                          ))}
+                          <div className="pay-breakdown-total">
+                            <span>Total Deductions</span>
+                            <strong>{formatCurrency(totalDeductions)}</strong>
+                          </div>
+                        </section>
+                      </div>
+
+                      <p className="pay-breakdown-note">* The salary breakdown is for informational purposes only.</p>
+                    </div>
+                  </div>
+                )
+              })()}
+
+              {/* ── TAX DOCUMENTS TAB ── */}
+              {activePayTab === 'Tax Documents' && (
+                <div className="pay-taxdocs-shell">
+                  <div className="pay-taxdocs-banner">
+                    <div className="pay-taxdocs-banner-left">
+                      <span className="pay-taxdocs-icon">📋</span>
+                      <div>
+                        <div className="pay-taxdocs-fy-label">Financial Year</div>
+                        <div className="pay-taxdocs-fy">2024-25 (01 Apr 2024 - 31 Mar 2025)</div>
+                      </div>
+                    </div>
+                    <div className="pay-taxdocs-help">
+                      <span>ℹ️</span>
+                      <div>
+                        <strong>Need help?</strong>
+                        <p>For any tax related queries, contact your HR or check our Help Center.</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <section className="pay-table-card" aria-label="Tax documents">
+                    <div className="pay-table-wrap">
+                      <table className="pay-table">
+                        <thead>
+                          <tr>
+                            <th>Document</th>
+                            <th>Financial Year</th>
+                            <th>Description</th>
+                            <th>Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {taxDocumentSeedData.map(doc => (
+                            <tr key={doc.id}>
+                              <td><strong>{doc.name}</strong></td>
+                              <td>{doc.financialYear}</td>
+                              <td>{doc.description}</td>
+                              <td>
+                                <button type="button" className="pay-download-btn" onClick={() => {
+                                  const csv = `Document,Financial Year,Description\n${doc.name},${doc.financialYear},${doc.description}`
+                                  const blob = new Blob([csv], { type: 'text/csv' })
+                                  const url = URL.createObjectURL(blob)
+                                  const a = document.createElement('a')
+                                  a.href = url
+                                  a.download = `${doc.name.replace(/\s+/g, '-')}-${doc.financialYear}.csv`
+                                  a.click()
+                                  URL.revokeObjectURL(url)
+                                }}>
+                                  ⬇️ Download
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </section>
+
+                  <p className="pay-breakdown-note">You can download these documents for your tax filing purposes.</p>
+                </div>
+              )}
+
+              {/* ── BANK DETAILS TAB ── */}
+              {activePayTab === 'Bank Details' && (
+                <div className="pay-bank-shell">
+                  <div className="pay-bank-grid">
+                    {/* Salary Account Card */}
+                    <section className="pay-card pay-bank-card" aria-label="Salary account">
+                      <h3>Salary Account</h3>
+                      <div className="pay-bank-inner">
+                        <div className="pay-bank-icon-wrap">
+                          <span className="pay-bank-icon">🏛️</span>
+                          {bankDetailsSeed.verified && (
+                            <span className="pay-bank-verified">✅ Verified</span>
+                          )}
+                        </div>
+                        <dl className="pay-bank-dl">
+                          <div><dt>Bank Name</dt><dd><strong>{bankDetailsSeed.bankName}</strong></dd></div>
+                          <div><dt>Account Number</dt><dd>{maskAccountNumber(bankDetailsSeed.accountNumber)}</dd></div>
+                          <div><dt>IFSC Code</dt><dd>{bankDetailsSeed.ifscCode}</dd></div>
+                          <div><dt>Account Holder Name</dt><dd>{bankDetailsSeed.accountHolderName}</dd></div>
+                        </dl>
+                      </div>
+                    </section>
+
+                    {/* Update Request Card */}
+                    <section className="pay-card pay-bank-update-card" aria-label="Bank update request">
+                      <h3>Need to update bank details?</h3>
+                      <p className="pay-bank-update-desc">You can request for bank details update. The request will be reviewed and updated by HR.</p>
+                      {bankUpdateRequestSent ? (
+                        <div className="pay-bank-success">
+                          ✅ Your bank update request has been submitted successfully. HR will review and update your details.
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          className="btn btn-primary"
+                          id="request-bank-update-btn"
+                          onClick={() => { setBankUpdateModalOpen(true); setBankUpdateError(''); setBankUpdateSuccess(false) }}
+                        >
+                          Request Bank Update
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        className="pay-view-link"
+                        style={{ marginTop: '12px' }}
+                        onClick={() => {}}
+                      >
+                        View Request Status ›
+                      </button>
+                    </section>
+                  </div>
+
+                  <p className="pay-breakdown-note">* Salary is credited to your above bank account every month.</p>
+
+                  {/* Bank Update Modal */}
+                  {bankUpdateModalOpen && (
+                    <div className="pay-modal-backdrop" role="presentation" onClick={() => setBankUpdateModalOpen(false)}>
+                      <div
+                        className="pay-modal"
+                        role="dialog"
+                        aria-modal="true"
+                        aria-label="Request bank details update"
+                        onClick={e => e.stopPropagation()}
+                      >
+                        <div className="pay-modal-head">
+                          <h3>Request Bank Details Update</h3>
+                          <button type="button" className="pay-modal-close" onClick={() => setBankUpdateModalOpen(false)}>✕</button>
+                        </div>
+                        <p className="pay-modal-sub">Fill in the new bank details below. HR will verify and update.</p>
+
+                        <div className="pay-bank-form-grid">
+                          <label>
+                            Bank Name <span className="pay-req">*</span>
+                            <input
+                              id="bank-name-input"
+                              type="text"
+                              placeholder="e.g. HDFC Bank Limited"
+                              value={bankUpdateForm.bankName}
+                              onChange={e => setBankUpdateForm(p => ({ ...p, bankName: e.target.value }))}
+                            />
+                          </label>
+                          <label>
+                            Account Number <span className="pay-req">*</span>
+                            <input
+                              id="bank-account-input"
+                              type="text"
+                              placeholder="Enter account number"
+                              value={bankUpdateForm.accountNumber}
+                              onChange={e => setBankUpdateForm(p => ({ ...p, accountNumber: e.target.value }))}
+                            />
+                          </label>
+                          <label>
+                            IFSC Code <span className="pay-req">*</span>
+                            <input
+                              id="bank-ifsc-input"
+                              type="text"
+                              placeholder="e.g. HDFC0001234"
+                              value={bankUpdateForm.ifscCode}
+                              onChange={e => setBankUpdateForm(p => ({ ...p, ifscCode: e.target.value.toUpperCase() }))}
+                            />
+                          </label>
+                          <label>
+                            Account Holder Name <span className="pay-req">*</span>
+                            <input
+                              id="bank-holder-input"
+                              type="text"
+                              placeholder="Name as on bank account"
+                              value={bankUpdateForm.accountHolderName}
+                              onChange={e => setBankUpdateForm(p => ({ ...p, accountHolderName: e.target.value }))}
+                            />
+                          </label>
+                          <label className="pay-form-full">
+                            Reason for Update <span className="pay-req">*</span>
+                            <textarea
+                              id="bank-reason-input"
+                              rows={3}
+                              placeholder="Provide reason for bank account change"
+                              value={bankUpdateForm.reason}
+                              onChange={e => setBankUpdateForm(p => ({ ...p, reason: e.target.value }))}
+                            />
+                          </label>
+                        </div>
+
+                        {bankUpdateError && <p className="pay-form-error">{bankUpdateError}</p>}
+
+                        <div className="pay-modal-actions">
+                          <button type="button" className="btn" onClick={() => setBankUpdateModalOpen(false)}>Cancel</button>
+                          <button
+                            type="button"
+                            className="btn btn-primary"
+                            id="submit-bank-update-btn"
+                            onClick={() => {
+                              setBankUpdateError('')
+                              const { bankName, accountNumber, ifscCode, accountHolderName, reason } = bankUpdateForm
+                              if (!bankName.trim()) { setBankUpdateError('Bank name is required.'); return }
+                              if (!accountNumber.trim() || accountNumber.trim().length < 9) { setBankUpdateError('Please enter a valid account number (min 9 digits).'); return }
+                              if (!/^[A-Z]{4}0[A-Z0-9]{6}$/.test(ifscCode.trim())) { setBankUpdateError('IFSC Code must be in format: 4 letters, 0, 6 alphanumeric (e.g. HDFC0001234).'); return }
+                              if (!accountHolderName.trim()) { setBankUpdateError('Account holder name is required.'); return }
+                              if (!reason.trim() || reason.trim().length < 10) { setBankUpdateError('Please provide a reason (min 10 characters).'); return }
+                              setBankUpdateRequestSent(true)
+                              setBankUpdateModalOpen(false)
+                              setBankUpdateForm({ bankName: '', accountNumber: '', ifscCode: '', accountHolderName: '', reason: '' })
+                            }}
+                          >
+                            Submit Request
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* ── PAYMENT HISTORY TAB ── */}
+              {activePayTab === 'Payment History' && (() => {
+                const filtered = payHistoryStatusFilter === 'All'
+                  ? paymentHistorySeed
+                  : paymentHistorySeed.filter(p => p.status === payHistoryStatusFilter)
+                return (
+                  <div className="pay-payhistory-shell">
+                    <div className="pay-history-filters">
+                      {(['All', 'Credited', 'Pending', 'Failed'] as const).map(status => (
+                        <button
+                          key={status}
+                          type="button"
+                          className={`pay-history-chip ${payHistoryStatusFilter === status ? 'active' : ''}`}
+                          onClick={() => setPayHistoryStatusFilter(status)}
+                        >
+                          {status}
+                        </button>
+                      ))}
+                    </div>
+
+                    <section className="pay-table-card" aria-label="Payment history table">
+                      <div className="pay-table-wrap">
+                        <table className="pay-table">
+                          <thead>
+                            <tr>
+                              <th>Month</th>
+                              <th>Pay Date</th>
+                              <th>Gross Salary</th>
+                              <th>Net Salary</th>
+                              <th>Payment Mode</th>
+                              <th>Transaction ID</th>
+                              <th>Status</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {filtered.map(ph => (
+                              <tr key={ph.id}>
+                                <td>{ph.month}</td>
+                                <td>{ph.payDate}</td>
+                                <td>{formatCurrency(ph.grossSalary)}</td>
+                                <td>{formatCurrency(ph.netSalary)}</td>
+                                <td>{ph.paymentMode}</td>
+                                <td><span className="pay-txn-id">{ph.transactionId}</span></td>
+                                <td><span className={`pay-history-status ${ph.status.toLowerCase()}`}>{ph.status}</span></td>
+                              </tr>
+                            ))}
+                            {filtered.length === 0 && (
+                              <tr><td colSpan={7} className="pay-empty-row">No payment history found.</td></tr>
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    </section>
+
+                    <p className="pay-breakdown-note">* Payment history shows salary credits to your registered bank account.</p>
+                  </div>
+                )
+              })()}
             </div>
           ) : currentModule === 'leave' ? (
             <div className="leave-shell">
