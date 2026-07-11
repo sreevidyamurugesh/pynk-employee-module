@@ -157,6 +157,25 @@ const leaveTabs = ['My Leave', 'Apply Leave', 'Leave Balance', 'Leave History'] 
 const myPayTabs = ['Overview', 'Payslips', 'Salary Breakdown', 'Tax Documents', 'Bank Details', 'Payment History'] as const
 type MyPayTab = (typeof myPayTabs)[number]
 
+const documentTabs = ['My Documents', 'Employment Documents', 'Payroll Documents', 'Tax Documents', 'Uploaded Documents', 'Expiring Documents'] as const
+type DocumentTab = (typeof documentTabs)[number]
+
+// ── Documents Types ──
+interface PortalDocument {
+  id: string
+  name: string
+  description: string
+  issuedOn?: string
+  monthYear?: string
+  financialYear?: string
+  uploadedOn?: string
+  status: 'Available' | 'Pending Verification' | 'Verified'
+  size: string
+  category?: string
+  verifiedOn?: string
+}
+
+
 // ── My Pay Types ──
 interface Payslip {
   id: string
@@ -269,6 +288,41 @@ const paymentHistorySeed: PaymentHistoryItem[] = [
   { id: 'ph-005', month: 'February 2025', payDate: '28 Feb 2025', grossSalary: 95000, netSalary: 66300, paymentMode: 'NEFT', transactionId: 'NEFT202502280001', status: 'Credited' },
   { id: 'ph-006', month: 'January 2025', payDate: '31 Jan 2025', grossSalary: 95000, netSalary: 66300, paymentMode: 'NEFT', transactionId: 'NEFT202501310001', status: 'Credited' },
 ]
+
+// ── Documents Seed Data ──
+const employmentDocsSeed: PortalDocument[] = [
+  { id: 'ed-001', name: 'Offer Letter', description: 'Your offer letter at the time of joining', issuedOn: '12 Jun 2023', status: 'Available', size: '245 KB' },
+  { id: 'ed-002', name: 'Employment Contract', description: 'Employment agreement and terms', issuedOn: '01 Apr 2023', status: 'Available', size: '1.2 MB' },
+  { id: 'ed-003', name: 'Appointment Letter', description: 'Your appointment confirmation letter', issuedOn: '12 Jun 2023', status: 'Available', size: '300 KB' },
+  { id: 'ed-004', name: 'Promotion Letter', description: 'Promotion to Senior Product Designer', issuedOn: '15 Jan 2025', status: 'Available', size: '210 KB' },
+  { id: 'ed-005', name: 'Experience Letter', description: 'Experience letter for previous employment', issuedOn: '20 Dec 2024', status: 'Available', size: '150 KB' },
+]
+
+const payrollDocsSeed: PortalDocument[] = [
+  { id: 'pd-001', name: 'Payslip - June 2025', description: 'Monthly salary payslip', monthYear: 'June 2025', status: 'Available', size: '230 KB' },
+  { id: 'pd-002', name: 'Payslip - May 2025', description: 'Monthly salary payslip', monthYear: 'May 2025', status: 'Available', size: '230 KB' },
+  { id: 'pd-003', name: 'Payslip - April 2025', description: 'Monthly salary payslip', monthYear: 'April 2025', status: 'Available', size: '230 KB' },
+  { id: 'pd-004', name: 'Salary Certificate', description: 'Certificate for loan / visa purposes', monthYear: 'FY 2024-25', status: 'Available', size: '400 KB' },
+  { id: 'pd-005', name: 'Payroll Summary', description: 'Annual payroll summary', monthYear: 'FY 2024-25', status: 'Available', size: '800 KB' },
+  { id: 'pd-006', name: 'Bonus Letter', description: 'Annual performance bonus letter', monthYear: 'FY 2024-25', status: 'Available', size: '180 KB' },
+]
+
+const taxDocsSeed: PortalDocument[] = [
+  { id: 'td-001', name: 'Form 16', description: 'Annual tax statement', financialYear: '2024-25', status: 'Available', size: '1.1 MB' },
+  { id: 'td-002', name: 'Tax Certificate', description: 'Certificate for tax deducted at source', financialYear: '2024-25', status: 'Available', size: '350 KB' },
+  { id: 'td-003', name: 'Annual Income Statement', description: 'Summary of your income for the year', financialYear: '2024-25', status: 'Available', size: '500 KB' },
+  { id: 'td-004', name: 'Investment Declaration', description: 'Proof of your declared investments', financialYear: '2024-25', status: 'Available', size: '2.5 MB' },
+]
+
+const uploadedDocsSeed: PortalDocument[] = [
+  { id: 'ud-001', name: 'Passport', category: 'Identity Proof', uploadedOn: '10 Jan 2025', status: 'Verified', verifiedOn: '11 Jan 2025', size: '450 KB' },
+  { id: 'ud-002', name: 'Visa', category: 'Work Authorization', uploadedOn: '05 Jan 2025', status: 'Pending Verification', verifiedOn: '-', size: '1.5 MB' },
+  { id: 'ud-003', name: 'Aadhaar Card', category: 'Identity Proof', uploadedOn: '10 Jan 2025', status: 'Verified', verifiedOn: '11 Jan 2025', size: '300 KB' },
+  { id: 'ud-004', name: 'PAN Card', category: 'Tax Document', uploadedOn: '10 Jan 2025', status: 'Verified', verifiedOn: '11 Jan 2025', size: '250 KB' },
+  { id: 'ud-005', name: 'Bank Proof', category: 'Bank Details', uploadedOn: '10 Jan 2025', status: 'Verified', verifiedOn: '11 Jan 2025', size: '180 KB' },
+  { id: 'ud-006', name: 'Degree Certificate', category: 'Qualification', uploadedOn: '10 Jan 2025', status: 'Verified', verifiedOn: '11 Jan 2025', size: '800 KB' },
+]
+
 
 const formatCurrency = (amount: number) =>
   `₹ ${amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`
@@ -827,13 +881,13 @@ const createSeedHistoryItems = (today: Date) => {
     submittedOffset: number
     approvedOffset: number | null
   }> = [
-    { weeksAgo: 0, totalHours: 38.5, regularHours: 36, overtimeHours: 2.5, leaveHours: 0, status: 'draft', submittedOffset: 0, approvedOffset: null },
-    { weeksAgo: 1, totalHours: 42, regularHours: 40, overtimeHours: 2, leaveHours: 0, status: 'approved', submittedOffset: 6, approvedOffset: 6 },
-    { weeksAgo: 2, totalHours: 39, regularHours: 38, overtimeHours: 1, leaveHours: 0, status: 'approved', submittedOffset: 6, approvedOffset: 7 },
-    { weeksAgo: 3, totalHours: 41, regularHours: 40, overtimeHours: 1, leaveHours: 0, status: 'returned', submittedOffset: 6, approvedOffset: null },
-    { weeksAgo: 4, totalHours: 40, regularHours: 40, overtimeHours: 0, leaveHours: 0, status: 'approved', submittedOffset: 6, approvedOffset: 7 },
-    { weeksAgo: 5, totalHours: 40, regularHours: 40, overtimeHours: 0, leaveHours: 0, status: 'approved', submittedOffset: 6, approvedOffset: 7 },
-  ]
+      { weeksAgo: 0, totalHours: 38.5, regularHours: 36, overtimeHours: 2.5, leaveHours: 0, status: 'draft', submittedOffset: 0, approvedOffset: null },
+      { weeksAgo: 1, totalHours: 42, regularHours: 40, overtimeHours: 2, leaveHours: 0, status: 'approved', submittedOffset: 6, approvedOffset: 6 },
+      { weeksAgo: 2, totalHours: 39, regularHours: 38, overtimeHours: 1, leaveHours: 0, status: 'approved', submittedOffset: 6, approvedOffset: 7 },
+      { weeksAgo: 3, totalHours: 41, regularHours: 40, overtimeHours: 1, leaveHours: 0, status: 'returned', submittedOffset: 6, approvedOffset: null },
+      { weeksAgo: 4, totalHours: 40, regularHours: 40, overtimeHours: 0, leaveHours: 0, status: 'approved', submittedOffset: 6, approvedOffset: 7 },
+      { weeksAgo: 5, totalHours: 40, regularHours: 40, overtimeHours: 0, leaveHours: 0, status: 'approved', submittedOffset: 6, approvedOffset: 7 },
+    ]
 
   return seedRows.map((item) => {
     const fromDate = addDays(currentWeekStart, item.weeksAgo * -7)
@@ -1015,6 +1069,30 @@ export function EmployeePortalFlow(_props: EmployeePortalFlowProps) {
   const [activeTimeEntryTab, setActiveTimeEntryTab] = useState<(typeof timeEntryTabs)[number]>('My Timesheet')
   const [activeLeaveTab, setActiveLeaveTab] = useState<(typeof leaveTabs)[number]>('My Leave')
   const [activePayTab, setActivePayTab] = useState<MyPayTab>('Overview')
+
+  // Documents state
+  const [activeDocTab, setActiveDocTab] = useState<DocumentTab>('My Documents')
+  const [docSearchQuery, setDocSearchQuery] = useState('')
+  const [docCurrentPage, setDocCurrentPage] = useState(1)
+  const [taxYearFilter, setTaxYearFilter] = useState('2024-25')
+  const [docStatusFilter, setDocStatusFilter] = useState('All')
+  
+  const [uploadedDocsState, setUploadedDocsState] = useState<PortalDocument[]>(uploadedDocsSeed)
+  const [isDocUploadModalOpen, setIsDocUploadModalOpen] = useState(false)
+  const [docUploadName, setDocUploadName] = useState('')
+  const [docUploadCategory, setDocUploadCategory] = useState('')
+  const [docUploadFile, setDocUploadFile] = useState<File | null>(null)
+  const [docUploadError, setDocUploadError] = useState('')
+  
+  const [docPreview, setDocPreview] = useState<PortalDocument | null>(null)
+  const [docNotification, setDocNotification] = useState<string | null>(null)
+  
+  const DOCS_PER_PAGE = 5
+
+  const handleDownloadDoc = (doc: PortalDocument) => {
+    setDocNotification(`Downloading ${doc.name}...`)
+    setTimeout(() => setDocNotification(null), 3000)
+  }
 
   // My Pay state
   const [payslipYear, setPayslipYear] = useState('2025')
@@ -3110,7 +3188,7 @@ export function EmployeePortalFlow(_props: EmployeePortalFlowProps) {
                         type="button"
                         className="pay-view-link"
                         style={{ marginTop: '12px' }}
-                        onClick={() => {}}
+                        onClick={() => { }}
                       >
                         View Request Status ›
                       </button>
@@ -3276,6 +3354,419 @@ export function EmployeePortalFlow(_props: EmployeePortalFlowProps) {
                   </div>
                 )
               })()}
+            </div>
+          ) : currentModule === 'documents' ? (
+            <div className="doc-shell">
+              <div className="doc-top">
+                <div className="doc-tabs">
+                  {documentTabs.map((tab) => (
+                    <button
+                      key={tab}
+                      type="button"
+                      className={`doc-tab ${activeDocTab === tab ? 'active' : ''}`}
+                      onClick={() => {
+                        setActiveDocTab(tab)
+                        setDocSearchQuery('')
+                      }}
+                    >
+                      {tab}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* ── MY DOCUMENTS (OVERVIEW) ── */}
+              {activeDocTab === 'My Documents' && (
+                <div className="doc-overview-tab">
+                  <div className="doc-metrics-grid">
+                    <div className="doc-metric-card">
+                      <div className="doc-metric-icon blue">📄</div>
+                      <div className="doc-metric-content">
+                        <span className="doc-metric-label">Total Documents</span>
+                        <strong className="doc-metric-value">24</strong>
+                        <span className="doc-metric-sub">All time</span>
+                      </div>
+                    </div>
+                    <div className="doc-metric-card">
+                      <div className="doc-metric-icon green">⬇️</div>
+                      <div className="doc-metric-content">
+                        <span className="doc-metric-label">Downloaded This Month</span>
+                        <strong className="doc-metric-value">5</strong>
+                        <span className="doc-metric-sub">Files</span>
+                      </div>
+                    </div>
+                    <div className="doc-metric-card">
+                      <div className="doc-metric-icon orange">⬆️</div>
+                      <div className="doc-metric-content">
+                        <span className="doc-metric-label">Pending Uploads</span>
+                        <strong className="doc-metric-value">2</strong>
+                        <span className="doc-metric-sub">Files</span>
+                      </div>
+                    </div>
+                    <div className="doc-metric-card">
+                      <div className="doc-metric-icon red">📅</div>
+                      <div className="doc-metric-content">
+                        <span className="doc-metric-label">Expiring Soon</span>
+                        <strong className="doc-metric-value">1</strong>
+                        <span className="doc-metric-sub">Documents</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="doc-overview-split">
+                    <section className="doc-card" aria-label="Quick Actions">
+                      <h3>Quick Actions</h3>
+                      <div className="doc-quick-actions-grid">
+                        <button type="button" className="doc-quick-btn" onClick={() => setActiveDocTab('Uploaded Documents')}>
+                          <div className="doc-quick-icon blue">📤</div>
+                          <div className="doc-quick-text">
+                            <strong>Upload Document</strong>
+                            <span>Upload new document</span>
+                          </div>
+                        </button>
+                        <button type="button" className="doc-quick-btn" onClick={() => setActiveDocTab('Employment Documents')}>
+                          <div className="doc-quick-icon blue">📄</div>
+                          <div className="doc-quick-text">
+                            <strong>View Employment Contract</strong>
+                            <span>View your contract</span>
+                          </div>
+                        </button>
+                        <button type="button" className="doc-quick-btn" onClick={() => setActiveDocTab('Payroll Documents')}>
+                          <div className="doc-quick-icon green">💵</div>
+                          <div className="doc-quick-text">
+                            <strong>Download Latest Payslip</strong>
+                            <span>June 2025</span>
+                          </div>
+                        </button>
+                        <button type="button" className="doc-quick-btn" onClick={() => setActiveDocTab('Tax Documents')}>
+                          <div className="doc-quick-icon purple">🧾</div>
+                          <div className="doc-quick-text">
+                            <strong>View Tax Documents</strong>
+                            <span>Download tax files</span>
+                          </div>
+                        </button>
+                      </div>
+                    </section>
+
+                    <section className="doc-card" aria-label="Recent Documents">
+                      <div className="doc-card-head">
+                        <h3>Recent Documents</h3>
+                        <button type="button" className="doc-view-all" onClick={() => setActiveDocTab('Employment Documents')}>View All</button>
+                      </div>
+                      <div className="doc-recent-list">
+                        {[employmentDocsSeed[0], employmentDocsSeed[1], uploadedDocsSeed[0], payrollDocsSeed[0], taxDocsSeed[0]].map((doc, idx) => (
+                          <div key={idx} className="doc-recent-row">
+                            <span className="doc-recent-icon">📄</span>
+                            <span className="doc-recent-name">{doc.name}</span>
+                            <span className="doc-recent-meta">PDF • {doc.size}</span>
+                            <span className="doc-recent-date">{doc.issuedOn || doc.monthYear || doc.uploadedOn || doc.financialYear}</span>
+                            <button type="button" className="doc-action-btn" onClick={() => handleDownloadDoc(doc)}>⬇️</button>
+                          </div>
+                        ))}
+                      </div>
+                    </section>
+                  </div>
+
+                  <div className="doc-info-tip">
+                    <span>ℹ️</span> Tip: You can upload documents in PDF, JPG, PNG format. Max file size 10MB.
+                  </div>
+                </div>
+              )}
+
+              {/* ── SHARED TABLE LAYOUT FOR OTHER TABS ── */}
+              {activeDocTab !== 'My Documents' && (
+                <div className="doc-table-shell">
+                  <div className="doc-table-header">
+                    <div className="doc-table-title">
+                      <h3>{activeDocTab}</h3>
+                      <p>
+                        {activeDocTab === 'Employment Documents' && 'Documents issued by your employer.'}
+                        {activeDocTab === 'Payroll Documents' && 'Payroll related documents and salary information.'}
+                        {activeDocTab === 'Tax Documents' && 'Tax related documents and certificates.'}
+                        {activeDocTab === 'Uploaded Documents' && 'Documents uploaded by you for verification.'}
+                        {activeDocTab === 'Expiring Documents' && 'Documents that are expiring soon.'}
+                      </p>
+                    </div>
+
+                    <div className="doc-table-controls">
+                      {activeDocTab === 'Tax Documents' ? (
+                        <div className="doc-filter-group">
+                          <label>Financial Year</label>
+                          <select value={taxYearFilter} onChange={(e) => { setTaxYearFilter(e.target.value); setDocCurrentPage(1); }}>
+                            <option value="2024-25">2024-25 (Apr 2024 - Mar 2025)</option>
+                            <option value="2023-24">2023-24 (Apr 2023 - Mar 2024)</option>
+                          </select>
+                        </div>
+                      ) : (
+                        <div className="doc-search-box">
+                          <input
+                            type="text"
+                            placeholder="Search document"
+                            value={docSearchQuery}
+                            onChange={(e) => { setDocSearchQuery(e.target.value); setDocCurrentPage(1); }}
+                          />
+                          <span className="doc-search-icon">🔍</span>
+                        </div>
+                      )}
+
+                      {activeDocTab === 'Uploaded Documents' && (
+                        <button type="button" className="doc-upload-btn" onClick={() => setIsDocUploadModalOpen(true)}>📤 Upload Document</button>
+                      )}
+                      <select className="doc-filter-btn" value={docStatusFilter} onChange={(e) => { setDocStatusFilter(e.target.value); setDocCurrentPage(1); }} style={{ appearance: 'auto' }}>
+                        <option value="All">All Status</option>
+                        <option value="Available">Available</option>
+                        <option value="Verified">Verified</option>
+                        <option value="Pending Verification">Pending</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="doc-table-card">
+                    <div className="doc-table-wrap">
+                      <table className="doc-table">
+                        <thead>
+                          <tr>
+                            <th>Document Name</th>
+                            {activeDocTab === 'Uploaded Documents' ? (
+                              <th>Category</th>
+                            ) : (
+                              <th>Description</th>
+                            )}
+                            {activeDocTab === 'Employment Documents' && <th>Issued On</th>}
+                            {activeDocTab === 'Payroll Documents' && <th>Month / Year</th>}
+                            {activeDocTab === 'Tax Documents' && <th>Financial Year</th>}
+                            {activeDocTab === 'Uploaded Documents' && <th>Uploaded On</th>}
+                            <th>Status</th>
+                            {activeDocTab === 'Uploaded Documents' && <th>Verified On</th>}
+                            <th>Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {(() => {
+                            let source = []
+                            if (activeDocTab === 'Employment Documents') source = employmentDocsSeed
+                            else if (activeDocTab === 'Payroll Documents') source = payrollDocsSeed
+                            else if (activeDocTab === 'Tax Documents') source = taxDocsSeed
+                            else if (activeDocTab === 'Uploaded Documents') source = uploadedDocsState
+                            else if (activeDocTab === 'Expiring Documents') source = [uploadedDocsState[1]]
+
+                            let filtered = source.filter(d => d.name.toLowerCase().includes(docSearchQuery.toLowerCase()))
+                            
+                            if (activeDocTab === 'Tax Documents') {
+                              filtered = filtered.filter(d => d.financialYear === taxYearFilter)
+                            }
+                            
+                            if (docStatusFilter !== 'All') {
+                               filtered = filtered.filter(d => {
+                                 if (docStatusFilter === 'Pending') return d.status === 'Pending Verification'
+                                 return d.status === docStatusFilter
+                               })
+                            }
+
+                            const totalItems = filtered.length
+                            const startIndex = (docCurrentPage - 1) * DOCS_PER_PAGE
+                            const paginated = filtered.slice(startIndex, startIndex + DOCS_PER_PAGE)
+
+                            if (paginated.length === 0) {
+                              return <tr><td colSpan={6} className="doc-empty">No documents found.</td></tr>
+                            }
+
+                            return paginated.map((doc) => (
+                              <tr key={doc.id}>
+                                <td className="doc-cell-name">{doc.name}</td>
+
+                                {activeDocTab === 'Uploaded Documents' ? (
+                                  <td>{doc.category}</td>
+                                ) : (
+                                  <td>{doc.description}</td>
+                                )}
+
+                                {activeDocTab === 'Employment Documents' && <td>{doc.issuedOn}</td>}
+                                {activeDocTab === 'Payroll Documents' && <td>{doc.monthYear}</td>}
+                                {activeDocTab === 'Tax Documents' && <td>{doc.financialYear}</td>}
+                                {activeDocTab === 'Uploaded Documents' && <td>{doc.uploadedOn}</td>}
+
+                                <td>
+                                  <span className={`doc-status ${doc.status === 'Available' || doc.status === 'Verified' ? 'success' : 'warning'}`}>
+                                    {doc.status}
+                                  </span>
+                                </td>
+
+                                {activeDocTab === 'Uploaded Documents' && <td>{doc.verifiedOn}</td>}
+
+                                <td>
+                                  <div className="doc-table-actions">
+                                    <button type="button" title="View" onClick={() => setDocPreview(doc)}>👁️</button>
+                                    <button type="button" title="Download" onClick={() => handleDownloadDoc(doc)}>⬇️</button>
+                                  </div>
+                                </td>
+                              </tr>
+                            ))
+                          })()}
+                        </tbody>
+                      </table>
+                    </div>
+                    <div className="doc-pagination" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span className="doc-pagination-info">
+                        {(() => {
+                            let source = []
+                            if (activeDocTab === 'Employment Documents') source = employmentDocsSeed
+                            else if (activeDocTab === 'Payroll Documents') source = payrollDocsSeed
+                            else if (activeDocTab === 'Tax Documents') source = taxDocsSeed
+                            else if (activeDocTab === 'Uploaded Documents') source = uploadedDocsState
+                            else if (activeDocTab === 'Expiring Documents') source = [uploadedDocsState[1]]
+                            
+                            let filtered = source.filter(d => d.name.toLowerCase().includes(docSearchQuery.toLowerCase()))
+                            if (activeDocTab === 'Tax Documents') {
+                              filtered = filtered.filter(d => d.financialYear === taxYearFilter)
+                            }
+                            if (docStatusFilter !== 'All') {
+                               filtered = filtered.filter(d => d.status === (docStatusFilter === 'Pending' ? 'Pending Verification' : docStatusFilter))
+                            }
+                            
+                            const totalItems = filtered.length
+                            if (totalItems === 0) return 'Showing 0 documents'
+                            const start = (docCurrentPage - 1) * DOCS_PER_PAGE + 1
+                            const end = Math.min(docCurrentPage * DOCS_PER_PAGE, totalItems)
+                            return `Showing ${start} to ${end} of ${totalItems} documents`
+                        })()}
+                      </span>
+                      <div className="doc-pagination-controls" style={{ display: 'flex', gap: '8px' }}>
+                        <button type="button" className="btn" disabled={docCurrentPage === 1} onClick={() => setDocCurrentPage(p => Math.max(1, p - 1))}>Prev</button>
+                        <button type="button" className="btn" disabled={
+                          (() => {
+                            let source = []
+                            if (activeDocTab === 'Employment Documents') source = employmentDocsSeed
+                            else if (activeDocTab === 'Payroll Documents') source = payrollDocsSeed
+                            else if (activeDocTab === 'Tax Documents') source = taxDocsSeed
+                            else if (activeDocTab === 'Uploaded Documents') source = uploadedDocsState
+                            else if (activeDocTab === 'Expiring Documents') source = [uploadedDocsState[1]]
+                            
+                            let filtered = source.filter(d => d.name.toLowerCase().includes(docSearchQuery.toLowerCase()))
+                            if (activeDocTab === 'Tax Documents') {
+                              filtered = filtered.filter(d => d.financialYear === taxYearFilter)
+                            }
+                            if (docStatusFilter !== 'All') {
+                               filtered = filtered.filter(d => d.status === (docStatusFilter === 'Pending' ? 'Pending Verification' : docStatusFilter))
+                            }
+                            return docCurrentPage >= Math.ceil(filtered.length / DOCS_PER_PAGE)
+                          })()
+                        } onClick={() => setDocCurrentPage(p => p + 1)}>Next</button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {activeDocTab === 'Uploaded Documents' && (
+                    <div className="doc-info-tip" style={{ marginTop: '14px' }}>
+                      <span>ℹ️</span> You will be notified once your documents are verified by HR.
+                    </div>
+                  )}
+
+                  {isDocUploadModalOpen && (
+                    <div className="time-modal-backdrop" role="presentation" onClick={() => setIsDocUploadModalOpen(false)}>
+                      <div className="time-modal" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
+                        <div className="time-modal-head">
+                          <h3>Upload Document</h3>
+                          <button type="button" onClick={() => setIsDocUploadModalOpen(false)}>✕</button>
+                        </div>
+                        <div className="time-modal-body" style={{ display: 'flex', flexDirection: 'column', gap: '16px', padding: '16px' }}>
+                          {docUploadError && <div className="login-error">{docUploadError}</div>}
+                          <div className="login-group">
+                            <label>Document Name *</label>
+                            <input type="text" value={docUploadName} onChange={e => setDocUploadName(e.target.value)} placeholder="e.g. Passport Copy" />
+                          </div>
+                          <div className="login-group">
+                            <label>Category *</label>
+                            <select value={docUploadCategory} onChange={e => setDocUploadCategory(e.target.value)}>
+                              <option value="">Select Category</option>
+                              <option value="Identity Proof">Identity Proof</option>
+                              <option value="Address Proof">Address Proof</option>
+                              <option value="Work Authorization">Work Authorization</option>
+                              <option value="Qualification">Qualification</option>
+                              <option value="Tax Document">Tax Document</option>
+                              <option value="Bank Details">Bank Details</option>
+                              <option value="Other">Other</option>
+                            </select>
+                          </div>
+                          <div className="login-group">
+                            <label>File *</label>
+                            <input type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={e => setDocUploadFile(e.target.files?.[0] || null)} />
+                          </div>
+                        </div>
+                        <div className="time-modal-foot">
+                          <button type="button" className="btn" onClick={() => setIsDocUploadModalOpen(false)}>Cancel</button>
+                          <button type="button" className="btn btn-primary" onClick={() => {
+                            if (!docUploadName || !docUploadCategory || !docUploadFile) {
+                              setDocUploadError('Please fill all required fields and select a file.')
+                              return
+                            }
+                            const newDoc: PortalDocument = {
+                              id: `ud-new-${Date.now()}`,
+                              name: docUploadName,
+                              category: docUploadCategory,
+                              status: 'Pending Verification',
+                              size: `${(docUploadFile.size / 1024).toFixed(0)} KB`,
+                              uploadedOn: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
+                              verifiedOn: '-'
+                            }
+                            setUploadedDocsState([newDoc, ...uploadedDocsState])
+                            setIsDocUploadModalOpen(false)
+                            setDocUploadName('')
+                            setDocUploadCategory('')
+                            setDocUploadFile(null)
+                            setDocUploadError('')
+                          }}>Upload</button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {docPreview && (
+                    <div className="time-modal-backdrop" role="presentation" onClick={() => setDocPreview(null)}>
+                      <div className="time-modal" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
+                        <div className="time-modal-head">
+                          <h3>{docPreview.name}</h3>
+                          <button type="button" onClick={() => setDocPreview(null)}>✕</button>
+                        </div>
+                        <div className="time-modal-body" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px', padding: '32px' }}>
+                          <span style={{ fontSize: '48px' }}>📄</span>
+                          <p style={{ textAlign: 'center', color: '#9ea2bd', margin: 0 }}>This is a preview of the document.<br/>(Preview not available in demo)</p>
+                          <div style={{ marginTop: '16px', display: 'flex', gap: '8px', fontSize: '13px', color: '#c6c8de' }}>
+                            <span>Size: {docPreview.size}</span>
+                            <span>|</span>
+                            <span>Status: {docPreview.status}</span>
+                          </div>
+                        </div>
+                        <div className="time-modal-foot">
+                          <button type="button" className="btn" onClick={() => setDocPreview(null)}>Close</button>
+                          <button type="button" className="btn btn-primary" onClick={() => {
+                            setDocPreview(null)
+                            handleDownloadDoc(docPreview)
+                          }}>Download</button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {docNotification && (
+                    <div style={{
+                      position: 'fixed',
+                      bottom: '24px',
+                      right: '24px',
+                      background: '#2ecc71',
+                      color: '#fff',
+                      padding: '12px 24px',
+                      border: '1px solid #1a4d2e',
+                      borderRadius: '8px',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                      fontWeight: '700',
+                      zIndex: 1000,
+                    }}>
+                      {docNotification}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           ) : currentModule === 'leave' ? (
             <div className="leave-shell">
