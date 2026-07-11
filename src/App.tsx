@@ -104,6 +104,12 @@ function App() {
     ? 'HR Suite · Employee Portal'
     : flowType === 'run' ? 'HR Suite · Payroll' : 'HR Suite · Payroll Results'
 
+  useEffect(() => {
+    if (activeMenu === 'employee') {
+      setSidebarOpen(false)
+    }
+  }, [activeMenu])
+
   // If user is not logged in, show only login page
   if (!portalLoggedIn) {
     return (
@@ -127,14 +133,16 @@ function App() {
     <div className={`app-shell ${sidebarOpen ? 'sidebar-open' : ''} ${mode === 'doc' ? 'docmode' : ''}`}>
       <header className="shell">
         <div className="brand">
-          <button
-            className="header-menu-toggle"
-            aria-expanded={sidebarOpen}
-            aria-label={sidebarOpen ? 'Hide menu' : 'Open menu'}
-            onClick={() => setSidebarOpen((prev) => !prev)}
-          >
-            <span className="menu-icon">☰</span>
-          </button>
+          {activeMenu !== 'employee' && (
+            <button
+              className="header-menu-toggle"
+              aria-expanded={sidebarOpen}
+              aria-label={sidebarOpen ? 'Hide menu' : 'Open menu'}
+              onClick={() => setSidebarOpen((prev) => !prev)}
+            >
+              <span className="menu-icon">☰</span>
+            </button>
+          )}
           <div className="mark">P</div>
           <div>
             Pynk
@@ -201,36 +209,38 @@ function App() {
       </nav>
 
       <>
-      {sidebarOpen && (
+      {activeMenu !== 'employee' && sidebarOpen && (
         <div className="sidebar-backdrop" onClick={() => setSidebarOpen(false)} aria-hidden="true" />
       )}
       <div className={`main-grid ${sidebarOpen ? 'sidebar-open' : 'sidebar-closed'}`}>
-        <aside className={`side-menu ${sidebarOpen ? '' : 'closed'}`} aria-label="Payroll navigation">
-          <button className="sidebar-close" type="button" onClick={() => setSidebarOpen(false)}>
-            ✕
-          </button>
-          <button
-            type="button"
-            className={`menu-btn ${activeMenu === 'payroll' ? 'active' : ''}`}
-            onClick={() => { setActiveMenu('payroll'); selectFlowType('run'); setSidebarOpen(false) }}
-          >
-            Payroll
-          </button>
-          <button
-            type="button"
-            className={`menu-btn ${activeMenu === 'results' ? 'active' : ''}`}
-            onClick={() => { setActiveMenu('results'); selectFlowType('output'); setSidebarOpen(false) }}
-          >
-            Payroll results
-          </button>
-          <button
-            type="button"
-            className={`menu-btn ${activeMenu === 'employee' ? 'active' : ''}`}
-            onClick={() => { setActiveMenu('employee'); setSidebarOpen(false) }}
-          >
-            Employee
-          </button>
-        </aside>
+        {activeMenu !== 'employee' && (
+          <aside className={`side-menu ${sidebarOpen ? '' : 'closed'}`} aria-label="Payroll navigation">
+            <button className="sidebar-close" type="button" onClick={() => setSidebarOpen(false)}>
+              ✕
+            </button>
+            <button
+              type="button"
+              className={`menu-btn ${activeMenu === 'payroll' ? 'active' : ''}`}
+              onClick={() => { setActiveMenu('payroll'); selectFlowType('run'); setSidebarOpen(false) }}
+            >
+              Payroll
+            </button>
+            <button
+              type="button"
+              className={`menu-btn ${activeMenu === 'results' ? 'active' : ''}`}
+              onClick={() => { setActiveMenu('results'); selectFlowType('output'); setSidebarOpen(false) }}
+            >
+              Payroll results
+            </button>
+            <button
+              type="button"
+              className="menu-btn"
+              onClick={() => { setActiveMenu('employee'); setSidebarOpen(false) }}
+            >
+              Employee
+            </button>
+          </aside>
+        )}
 
         <main className="wrap" id="root">
         {activeMenu === 'employee' ? (
