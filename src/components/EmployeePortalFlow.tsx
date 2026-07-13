@@ -160,6 +160,62 @@ type MyPayTab = (typeof myPayTabs)[number]
 const documentTabs = ['My Documents', 'Employment Documents', 'Payroll Documents', 'Tax Documents', 'Uploaded Documents', 'Expiring Documents'] as const
 type DocumentTab = (typeof documentTabs)[number]
 
+const profileTabs = [
+  'Overview',
+  'Personal',
+  'Contact',
+  'Employment',
+  'Emergency',
+  'Bank',
+  'Documents & IDs',
+  'Skills',
+  'Preferences',
+  'Change Requests'
+] as const
+type ProfileTab = (typeof profileTabs)[number]
+
+// ── Profile Types ──
+interface PersonalInfo {
+  firstName: string
+  middleName: string
+  lastName: string
+  preferredName: string
+  dateOfBirth: string
+  gender: string
+  maritalStatus: string
+  nationality: string
+  panNumber: string
+  aadhaarNumber: string
+}
+
+interface ContactDetails {
+  workEmail: string
+  personalEmail: string
+  mobileNumber: string
+  alternateNumber: string
+  address: string
+  city: string
+  state: string
+  country: string
+  pinCode: string
+}
+
+interface EmergencyContact {
+  id: string
+  name: string
+  relationship: string
+  phone: string
+  email: string
+}
+
+interface ProfileChangeRequest {
+  id: string
+  type: string
+  requestedDate: string
+  status: 'Pending' | 'Approved' | 'Rejected'
+}
+
+
 // ── Documents Types ──
 interface PortalDocument {
   id: string
@@ -322,6 +378,44 @@ const uploadedDocsSeed: PortalDocument[] = [
   { id: 'ud-005', name: 'Bank Proof', category: 'Bank Details', uploadedOn: '10 Jan 2025', status: 'Verified', verifiedOn: '11 Jan 2025', size: '180 KB' },
   { id: 'ud-006', name: 'Degree Certificate', category: 'Qualification', uploadedOn: '10 Jan 2025', status: 'Verified', verifiedOn: '11 Jan 2025', size: '800 KB' },
 ]
+
+const personalInfoSeed: PersonalInfo = {
+  firstName: 'John',
+  middleName: 'Michael',
+  lastName: 'Doe',
+  preferredName: 'John',
+  dateOfBirth: '1992-05-14',
+  gender: 'Male',
+  maritalStatus: 'Single',
+  nationality: 'Indian',
+  panNumber: 'ABCDE1234F',
+  aadhaarNumber: 'XXXX XXXX 4589',
+}
+
+const contactDetailsSeed: ContactDetails = {
+  workEmail: 'john.doe@abc.com',
+  personalEmail: 'john.doe@gmail.com',
+  mobileNumber: '+91 98765 43210',
+  alternateNumber: '+91 91234 56789',
+  address: '123, 4th Cross, Koramangala',
+  city: 'Bangalore',
+  state: 'Karnataka',
+  country: 'India',
+  pinCode: '560034',
+}
+
+const emergencyContactsSeed: EmergencyContact[] = [
+  { id: 'ec-001', name: 'Jane Doe', relationship: 'Sister', phone: '+91 98765 11111', email: 'jane.doe@gmail.com' },
+  { id: 'ec-002', name: 'Robert Doe', relationship: 'Father', phone: '+91 98765 22222', email: 'robert.doe@gmail.com' },
+  { id: 'ec-003', name: 'Mary Doe', relationship: 'Mother', phone: '+91 98765 33333', email: 'mary.doe@gmail.com' },
+]
+
+const profileChangeRequestsSeed: ProfileChangeRequest[] = [
+  { id: 'cr-001', type: 'Name Change', requestedDate: '12 Jun 2025', status: 'Pending' },
+  { id: 'cr-002', type: 'Date of Birth Change', requestedDate: '05 May 2025', status: 'Approved' },
+  { id: 'cr-003', type: 'PAN Update', requestedDate: '10 Apr 2025', status: 'Approved' },
+]
+
 
 
 const formatCurrency = (amount: number) =>
@@ -1070,6 +1164,39 @@ export function EmployeePortalFlow(_props: EmployeePortalFlowProps) {
   const [activeLeaveTab, setActiveLeaveTab] = useState<(typeof leaveTabs)[number]>('My Leave')
   const [activePayTab, setActivePayTab] = useState<MyPayTab>('Overview')
 
+  // Profile state
+  const [activeProfileTab, setActiveProfileTab] = useState<ProfileTab>('Overview')
+  const [personalInfo, setPersonalInfo] = useState<PersonalInfo>(personalInfoSeed)
+  const [contactDetails, setContactDetails] = useState<ContactDetails>(contactDetailsSeed)
+  const [emergencyContacts, setEmergencyContacts] = useState<EmergencyContact[]>(emergencyContactsSeed)
+  const [profileChangeRequests, setProfileChangeRequests] = useState<ProfileChangeRequest[]>(profileChangeRequestsSeed)
+
+  // Profile temporary/edit states
+  const [isEditingContact, setIsEditingContact] = useState(false)
+  const [contactEditForm, setContactEditForm] = useState<ContactDetails>(contactDetailsSeed)
+  const [contactEditError, setContactEditError] = useState('')
+  const [contactEditSuccess, setContactEditSuccess] = useState(false)
+
+  // Emergency contact modals state
+  const [isEmergencyModalOpen, setIsEmergencyModalOpen] = useState(false)
+  const [emergencyModalMode, setEmergencyModalMode] = useState<'add' | 'edit'>('add')
+  const [editingEmergencyContactId, setEditingEmergencyContactId] = useState<string | null>(null)
+  const [emergencyForm, setEmergencyForm] = useState<Omit<EmergencyContact, 'id'>>({
+    name: '',
+    relationship: '',
+    phone: '',
+    email: '',
+  })
+  const [emergencyError, setEmergencyError] = useState('')
+
+  // Personal info change request modal state
+  const [isRequestChangeModalOpen, setIsRequestChangeModalOpen] = useState(false)
+  const [requestChangeField, setRequestChangeField] = useState('First Name')
+  const [requestChangeNewValue, setRequestChangeNewValue] = useState('')
+  const [requestChangeReason, setRequestChangeReason] = useState('')
+  const [requestChangeError, setRequestChangeError] = useState('')
+  const [requestChangeSuccess, setRequestChangeSuccess] = useState('')
+
   // Documents state
   const [activeDocTab, setActiveDocTab] = useState<DocumentTab>('My Documents')
   const [docSearchQuery, setDocSearchQuery] = useState('')
@@ -1092,6 +1219,124 @@ export function EmployeePortalFlow(_props: EmployeePortalFlowProps) {
   const handleDownloadDoc = (doc: PortalDocument) => {
     setDocNotification(`Downloading ${doc.name}...`)
     setTimeout(() => setDocNotification(null), 3000)
+  }
+
+  // ── Profile Handlers ──
+  const handleEditContactClick = () => {
+    setContactEditForm(contactDetails)
+    setIsEditingContact(true)
+    setContactEditError('')
+    setContactEditSuccess(false)
+  }
+
+  const handleSaveContact = () => {
+    if (
+      !contactEditForm.personalEmail ||
+      !contactEditForm.mobileNumber ||
+      !contactEditForm.address ||
+      !contactEditForm.city ||
+      !contactEditForm.state ||
+      !contactEditForm.country ||
+      !contactEditForm.pinCode
+    ) {
+      setContactEditError('All fields are required.')
+      return
+    }
+    if (!/\S+@\S+\.\S+/.test(contactEditForm.personalEmail)) {
+      setContactEditError('Please enter a valid personal email.')
+      return
+    }
+    setContactDetails(contactEditForm)
+    setIsEditingContact(false)
+    setContactEditSuccess(true)
+    setTimeout(() => setContactEditSuccess(false), 3000)
+  }
+
+  const handleOpenAddEmergency = () => {
+    setEmergencyForm({
+      name: '',
+      relationship: '',
+      phone: '',
+      email: '',
+    })
+    setEmergencyModalMode('add')
+    setEditingEmergencyContactId(null)
+    setEmergencyError('')
+    setIsEmergencyModalOpen(true)
+  }
+
+  const handleOpenEditEmergency = (contact: EmergencyContact) => {
+    setEmergencyForm({
+      name: contact.name,
+      relationship: contact.relationship,
+      phone: contact.phone,
+      email: contact.email,
+    })
+    setEmergencyModalMode('edit')
+    setEditingEmergencyContactId(contact.id)
+    setEmergencyError('')
+    setIsEmergencyModalOpen(true)
+  }
+
+  const handleSaveEmergencyContact = () => {
+    if (!emergencyForm.name || !emergencyForm.relationship || !emergencyForm.phone || !emergencyForm.email) {
+      setEmergencyError('All fields are required.')
+      return
+    }
+    if (!/\S+@\S+\.\S+/.test(emergencyForm.email)) {
+      setEmergencyError('Please enter a valid email address.')
+      return
+    }
+
+    if (emergencyModalMode === 'add') {
+      const newContact: EmergencyContact = {
+        id: `ec-${Date.now()}`,
+        ...emergencyForm,
+      }
+      setEmergencyContacts((prev) => [...prev, newContact])
+    } else {
+      setEmergencyContacts((prev) =>
+        prev.map((c) => (c.id === editingEmergencyContactId ? { ...c, ...emergencyForm } : c))
+      )
+    }
+    setIsEmergencyModalOpen(false)
+  }
+
+  const handleDeleteEmergencyContact = (id: string) => {
+    if (window.confirm('Are you sure you want to delete this emergency contact?')) {
+      setEmergencyContacts((prev) => prev.filter((c) => c.id !== id))
+    }
+  }
+
+  const handleOpenRequestChange = () => {
+    setRequestChangeField('First Name')
+    setRequestChangeNewValue('')
+    setRequestChangeReason('')
+    setRequestChangeError('')
+    setRequestChangeSuccess('')
+    setIsRequestChangeModalOpen(true)
+  }
+
+  const handleSubmitChangeRequest = () => {
+    if (!requestChangeNewValue || !requestChangeReason) {
+      setRequestChangeError('Both new value and reason are required.')
+      return
+    }
+
+    const newRequest: ProfileChangeRequest = {
+      id: `cr-${Date.now()}`,
+      type: `${requestChangeField} Change`,
+      requestedDate: new Date().toLocaleDateString('en-GB', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+      }),
+      status: 'Pending',
+    }
+
+    setProfileChangeRequests((prev) => [newRequest, ...prev])
+    setIsRequestChangeModalOpen(false)
+    alert('Change request submitted successfully!')
   }
 
   // My Pay state
@@ -4089,6 +4334,790 @@ export function EmployeePortalFlow(_props: EmployeePortalFlowProps) {
                     <p className="time-confirm-message">{leaveWarning.message}</p>
                     <div className="time-modal-actions">
                       <button type="button" className="btn btn-primary" onClick={() => setLeaveWarning(null)}>OK</button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : currentModule === 'profile' ? (
+            <div className="profile-shell">
+              <div className="profile-top">
+                <div className="profile-tabs" role="tablist" aria-label="Profile tabs">
+                  {profileTabs.map((tab) => (
+                    <button
+                      key={tab}
+                      type="button"
+                      className={`profile-tab ${activeProfileTab === tab ? 'active' : ''}`}
+                      onClick={() => setActiveProfileTab(tab)}
+                    >
+                      {tab}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {activeProfileTab === 'Overview' && (
+                <div className="profile-overview-shell">
+                  <div className="profile-overview-grid">
+                    {/* Left Card: Summary Card */}
+                    <div className="profile-card profile-summary-card">
+                      <div className="profile-avatar-large">
+                        <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=256&h=256&q=80" alt="John Doe" />
+                      </div>
+                      <h2 className="profile-name">{personalInfo.firstName} {personalInfo.lastName}</h2>
+                      <p className="profile-title">Software Engineer</p>
+                      <p className="profile-emp-id">EMP001245</p>
+                      <span className="profile-status-badge active">Active</span>
+                    </div>
+
+                    {/* Middle Card: Employee Snapshot */}
+                    <div className="profile-card profile-info-card">
+                      <h3>Employee Snapshot</h3>
+                      <div className="profile-details-list">
+                        <div className="profile-detail-row">
+                          <span className="label">Department</span>
+                          <span className="value">Engineering</span>
+                        </div>
+                        <div className="profile-detail-row">
+                          <span className="label">Manager</span>
+                          <span className="value">Sarah Johnson</span>
+                        </div>
+                        <div className="profile-detail-row">
+                          <span className="label">Location</span>
+                          <span className="value">Bangalore, India</span>
+                        </div>
+                        <div className="profile-detail-row">
+                          <span className="label">Employment Type</span>
+                          <span className="value">Full Time</span>
+                        </div>
+                        <div className="profile-detail-row">
+                          <span className="label">Joining Date</span>
+                          <span className="value">15 Mar 2023</span>
+                        </div>
+                        <div className="profile-detail-row">
+                          <span className="label">Work Email</span>
+                          <span className="value">{contactDetails.workEmail}</span>
+                        </div>
+                        <div className="profile-detail-row">
+                          <span className="label">Work Phone</span>
+                          <span className="value">{contactDetails.mobileNumber}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Right Card: Employment Details */}
+                    <div className="profile-card profile-info-card">
+                      <h3>Employment Details</h3>
+                      <div className="profile-details-list">
+                        <div className="profile-detail-row">
+                          <span className="label">Employment Country</span>
+                          <span className="value">🇮🇳 India</span>
+                        </div>
+                        <div className="profile-detail-row">
+                          <span className="label">Employer of Record</span>
+                          <span className="value">Pynk India Pvt Ltd</span>
+                        </div>
+                        <div className="profile-detail-row">
+                          <span className="label">Client Company</span>
+                          <span className="value">ABC Technologies</span>
+                        </div>
+                        <div className="profile-detail-row">
+                          <span className="label">Payroll Entity</span>
+                          <span className="value">Pynk India Pvt Ltd</span>
+                        </div>
+                        <div className="profile-detail-row">
+                          <span className="label">Payroll Cycle</span>
+                          <span className="value">Monthly</span>
+                        </div>
+                        <div className="profile-detail-row">
+                          <span className="label">Next Payday</span>
+                          <span className="value">31 Jul 2025</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Quick Actions Row */}
+                  <div className="quick-actions-section">
+                    <h3>Quick Actions</h3>
+                    <div className="quick-actions-grid">
+                      <button type="button" className="quick-action-tile" onClick={() => setActiveProfileTab('Contact')}>
+                        <div className="tile-icon-wrapper">
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                          </svg>
+                        </div>
+                        <div className="tile-content">
+                          <span className="tile-title">Update Contact</span>
+                          <span className="tile-desc">Update your contact details</span>
+                        </div>
+                      </button>
+
+                      <button type="button" className="quick-action-tile" onClick={() => setActiveProfileTab('Bank')}>
+                        <div className="tile-icon-wrapper">
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <rect x="2" y="22" width="20" height="2" />
+                            <path d="M5 22V10M19 22V10M12 22V10M2 10l10-8 10 8" />
+                          </svg>
+                        </div>
+                        <div className="tile-content">
+                          <span className="tile-title">Request Bank Change</span>
+                          <span className="tile-desc">Submit bank detail change</span>
+                        </div>
+                      </button>
+
+                      <button type="button" className="quick-action-tile" onClick={() => {
+                        setDocNotification("Downloading ID Card...");
+                        setTimeout(() => setDocNotification(null), 3000);
+                      }}>
+                        <div className="tile-icon-wrapper">
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <rect x="3" y="4" width="18" height="16" rx="2" ry="2" />
+                            <line x1="7" y1="8" x2="17" y2="8" />
+                            <line x1="7" y1="12" x2="17" y2="12" />
+                            <line x1="7" y1="16" x2="12" y2="16" />
+                          </svg>
+                        </div>
+                        <div className="tile-content">
+                          <span className="tile-title">Download ID Card</span>
+                          <span className="tile-desc">View and download ID card</span>
+                        </div>
+                      </button>
+
+                      <button type="button" className="quick-action-tile" onClick={() => setCurrentModule('documents')}>
+                        <div className="tile-icon-wrapper">
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                            <polyline points="14 2 14 8 20 8" />
+                            <line x1="16" y1="13" x2="8" y2="13" />
+                            <line x1="16" y1="17" x2="8" y2="17" />
+                          </svg>
+                        </div>
+                        <div className="tile-content">
+                          <span className="tile-title">View Documents</span>
+                          <span className="tile-desc">Access your documents</span>
+                        </div>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {activeProfileTab === 'Personal' && (
+                <div className="profile-personal-shell">
+                  <div className="profile-personal-grid">
+                    {/* Personal Information */}
+                    <div className="profile-card profile-personal-info-card">
+                      <h3>Personal Information</h3>
+                      <div className="personal-form-grid">
+                        <label>
+                          First Name
+                          <input type="text" value={personalInfo.firstName} disabled className="disabled-input" />
+                        </label>
+                        <label>
+                          Middle Name
+                          <input type="text" value={personalInfo.middleName} disabled className="disabled-input" />
+                        </label>
+                        <label>
+                          Last Name
+                          <input type="text" value={personalInfo.lastName} disabled className="disabled-input" />
+                        </label>
+                        <label>
+                          Preferred Name
+                          <input type="text" value={personalInfo.preferredName} disabled className="disabled-input" />
+                        </label>
+                        <label className="with-icon">
+                          Date of Birth
+                          <div className="input-with-icon-wrapper">
+                            <input type="text" value="14 May 1992" disabled className="disabled-input" />
+                            <span className="input-inner-icon">📅</span>
+                          </div>
+                        </label>
+                        <label className="with-icon">
+                          Gender
+                          <div className="input-with-icon-wrapper">
+                            <input type="text" value={personalInfo.gender} disabled className="disabled-input" />
+                            <span className="input-inner-icon">▼</span>
+                          </div>
+                        </label>
+                        <label className="with-icon">
+                          Marital Status
+                          <div className="input-with-icon-wrapper">
+                            <input type="text" value={personalInfo.maritalStatus} disabled className="disabled-input" />
+                            <span className="input-inner-icon">▼</span>
+                          </div>
+                        </label>
+                        <label className="with-icon">
+                          Nationality
+                          <div className="input-with-icon-wrapper">
+                            <input type="text" value={personalInfo.nationality} disabled className="disabled-input" />
+                            <span className="input-inner-icon">▼</span>
+                          </div>
+                        </label>
+                        <label>
+                          PAN Number
+                          <input type="text" value={personalInfo.panNumber} disabled className="disabled-input" />
+                        </label>
+                        <label>
+                          Aadhaar Number
+                          <input type="text" value={personalInfo.aadhaarNumber} disabled className="disabled-input" />
+                        </label>
+                      </div>
+                    </div>
+
+                    <div className="profile-personal-sidebar">
+                      {/* Request Change Card */}
+                      <div className="profile-card request-change-card">
+                        <h3>Request Change</h3>
+                        <div className="request-change-content">
+                          <div className="request-change-illustration">
+                            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#aa3bff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                              <circle cx="12" cy="7" r="4" />
+                              <path d="M12 11h.01" />
+                            </svg>
+                          </div>
+                          <p>To update your personal information, please raise a request.</p>
+                          <button type="button" className="btn btn-primary" onClick={handleOpenRequestChange}>
+                            Request Change
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Recent Requests Card */}
+                      <div className="profile-card recent-requests-card">
+                        <h3>Recent Requests</h3>
+                        <div className="requests-list">
+                          {profileChangeRequests.map((req) => (
+                            <div key={req.id} className="request-item">
+                              <div className="request-info">
+                                <span className="request-type">{req.type}</span>
+                                <span className="request-date">Requested on {req.requestedDate}</span>
+                              </div>
+                              <span className={`request-status-pill ${req.status.toLowerCase()}`}>
+                                {req.status}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {activeProfileTab === 'Contact' && (
+                <div className="profile-contact-shell">
+                  <p className="contact-intro">You can edit your contact information.</p>
+                  
+                  {contactEditSuccess && <p className="submit-success" style={{ marginBottom: '14px' }}>Contact details updated successfully!</p>}
+                  {contactEditError && <p className="submit-error" style={{ marginBottom: '14px' }}>{contactEditError}</p>}
+
+                  <div className="profile-card contact-card">
+                    <div className="contact-card-head">
+                      <h3>Contact Details</h3>
+                      {!isEditingContact ? (
+                        <button type="button" className="btn edit-btn" onClick={handleEditContactClick}>
+                          <span style={{ marginRight: '6px' }}>✏️</span> Edit
+                        </button>
+                      ) : (
+                        <div className="contact-edit-actions">
+                          <button type="button" className="btn btn-primary" onClick={handleSaveContact}>
+                            Save
+                          </button>
+                          <button type="button" className="btn" onClick={() => setIsEditingContact(false)}>
+                            Cancel
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    {!isEditingContact ? (
+                      <div className="contact-details-grid">
+                        <div className="contact-column">
+                          <div className="contact-field">
+                            <span className="label">Work Email</span>
+                            <div className="value-with-badge">
+                              <span className="value">{contactDetails.workEmail}</span>
+                              <span className="verified-badge">Verified</span>
+                            </div>
+                          </div>
+                          <div className="contact-field">
+                            <span className="label">Personal Email</span>
+                            <div className="value-with-badge">
+                              <span className="value">{contactDetails.personalEmail}</span>
+                              <span className="verified-badge">Verified</span>
+                            </div>
+                          </div>
+                          <div className="contact-field">
+                            <span className="label">Mobile Number</span>
+                            <div className="value-with-badge">
+                              <span className="value">{contactDetails.mobileNumber}</span>
+                              <span className="verified-badge">Verified</span>
+                            </div>
+                          </div>
+                          <div className="contact-field">
+                            <span className="label">Alternate Number</span>
+                            <span className="value">{contactDetails.alternateNumber || '-'}</span>
+                          </div>
+                        </div>
+
+                        <div className="contact-column">
+                          <div className="contact-field">
+                            <span className="label">Address</span>
+                            <span className="value">{contactDetails.address}</span>
+                          </div>
+                          <div className="contact-field">
+                            <span className="label">City</span>
+                            <span className="value">{contactDetails.city}</span>
+                          </div>
+                          <div className="contact-field">
+                            <span className="label">State</span>
+                            <span className="value">{contactDetails.state}</span>
+                          </div>
+                          <div className="contact-field">
+                            <span className="label">Country</span>
+                            <span className="value">{contactDetails.country}</span>
+                          </div>
+                          <div className="contact-field">
+                            <span className="label">PIN Code</span>
+                            <span className="value">{contactDetails.pinCode}</span>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="contact-edit-grid">
+                        <div className="contact-column">
+                          <label>
+                            Work Email (Read Only)
+                            <input type="text" value={contactDetails.workEmail} disabled className="disabled-input" />
+                          </label>
+                          <label>
+                            Personal Email
+                            <input
+                              type="email"
+                              value={contactEditForm.personalEmail}
+                              onChange={(e) => setContactEditForm({ ...contactEditForm, personalEmail: e.target.value })}
+                            />
+                          </label>
+                          <label>
+                            Mobile Number
+                            <input
+                              type="text"
+                              value={contactEditForm.mobileNumber}
+                              onChange={(e) => setContactEditForm({ ...contactEditForm, mobileNumber: e.target.value })}
+                            />
+                          </label>
+                          <label>
+                            Alternate Number
+                            <input
+                              type="text"
+                              value={contactEditForm.alternateNumber}
+                              onChange={(e) => setContactEditForm({ ...contactEditForm, alternateNumber: e.target.value })}
+                            />
+                          </label>
+                        </div>
+                        <div className="contact-column">
+                          <label>
+                            Address
+                            <input
+                              type="text"
+                              value={contactEditForm.address}
+                              onChange={(e) => setContactEditForm({ ...contactEditForm, address: e.target.value })}
+                            />
+                          </label>
+                          <label>
+                            City
+                            <input
+                              type="text"
+                              value={contactEditForm.city}
+                              onChange={(e) => setContactEditForm({ ...contactEditForm, city: e.target.value })}
+                            />
+                          </label>
+                          <label>
+                            State
+                            <input
+                              type="text"
+                              value={contactEditForm.state}
+                              onChange={(e) => setContactEditForm({ ...contactEditForm, state: e.target.value })}
+                            />
+                          </label>
+                          <label>
+                            Country
+                            <input
+                              type="text"
+                              value={contactEditForm.country}
+                              onChange={(e) => setContactEditForm({ ...contactEditForm, country: e.target.value })}
+                            />
+                          </label>
+                          <label>
+                            PIN Code
+                            <input
+                              type="text"
+                              value={contactEditForm.pinCode}
+                              onChange={(e) => setContactEditForm({ ...contactEditForm, pinCode: e.target.value })}
+                            />
+                          </label>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {activeProfileTab === 'Employment' && (
+                <div className="profile-employment-shell">
+                  <div className="profile-card employment-card">
+                    <h3>Employment Information</h3>
+                    <div className="employment-details-grid">
+                      <div className="employment-column">
+                        <div className="employment-field">
+                          <span className="label">Employee ID</span>
+                          <span className="value font-mono">EMP001245</span>
+                        </div>
+                        <div className="employment-field">
+                          <span className="label">Job Title</span>
+                          <span className="value">Software Engineer</span>
+                        </div>
+                        <div className="employment-field">
+                          <span className="label">Department</span>
+                          <span className="value">Engineering</span>
+                        </div>
+                        <div className="employment-field">
+                          <span className="label">Sub Department</span>
+                          <span className="value">Product Development</span>
+                        </div>
+                        <div className="employment-field">
+                          <span className="label">Manager</span>
+                          <span className="value">Sarah Johnson</span>
+                        </div>
+                        <div className="employment-field">
+                          <span className="label">Work Location</span>
+                          <span className="value">Bangalore, India</span>
+                        </div>
+                      </div>
+
+                      <div className="employment-column">
+                        <div className="employment-field">
+                          <span className="label">Employment Type</span>
+                          <span className="value">Full Time</span>
+                        </div>
+                        <div className="employment-field">
+                          <span className="label">Joining Date</span>
+                          <span className="value">15 Mar 2023</span>
+                        </div>
+                        <div className="employment-field">
+                          <span className="label">Confirmation Date</span>
+                          <span className="value">15 Sep 2023</span>
+                        </div>
+                        <div className="employment-field">
+                          <span className="label">Employee Status</span>
+                          <span className="verified-badge font-normal active" style={{ display: 'inline-flex' }}>Active</span>
+                        </div>
+                        <div className="employment-field">
+                          <span className="label">Notice Period</span>
+                          <span className="value">60 Days</span>
+                        </div>
+                        <div className="employment-field">
+                          <span className="label">Payroll Entity</span>
+                          <span className="value">Pynk India Pvt Ltd</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="employment-info-banner">
+                    <span className="banner-icon">ℹ️</span>
+                    <span className="banner-text">For any changes in employment information, please contact your HR.</span>
+                  </div>
+                </div>
+              )}
+
+              {activeProfileTab === 'Emergency' && (
+                <div className="profile-emergency-shell">
+                  <div className="emergency-actions-row">
+                    <button type="button" className="btn btn-primary" onClick={handleOpenAddEmergency}>
+                      + Add Contact
+                    </button>
+                  </div>
+
+                  <div className="profile-card emergency-card">
+                    <table className="emergency-contacts-table">
+                      <thead>
+                        <tr>
+                          <th>Contact Name</th>
+                          <th>Relationship</th>
+                          <th>Phone Number</th>
+                          <th>Email Address</th>
+                          <th>Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {emergencyContacts.map((contact) => (
+                          <tr key={contact.id}>
+                            <td>{contact.name}</td>
+                            <td>{contact.relationship}</td>
+                            <td>{contact.phone}</td>
+                            <td>{contact.email}</td>
+                            <td className="emergency-table-actions">
+                              <button type="button" className="action-btn edit" onClick={() => handleOpenEditEmergency(contact)} title="Edit">
+                                ✏️
+                              </button>
+                              <button type="button" className="action-btn delete" onClick={() => handleDeleteEmergencyContact(contact.id)} title="Delete">
+                                🗑️
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                        {emergencyContacts.length === 0 && (
+                          <tr>
+                            <td colSpan={5} className="empty-contacts-row">No emergency contacts listed.</td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <div className="employment-info-banner">
+                    <span className="banner-icon">ℹ️</span>
+                    <span className="banner-text">Please ensure your emergency contacts are always up to date.</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Placeholder views for other tabs */}
+              {!['Overview', 'Personal', 'Contact', 'Employment', 'Emergency'].includes(activeProfileTab) && (
+                <div className="profile-card placeholder-tab-card">
+                  <h3>{activeProfileTab} Details</h3>
+                  <p>Details and settings for the {activeProfileTab} section are being processed.</p>
+                  
+                  {activeProfileTab === 'Bank' && (
+                    <div className="bank-details-placeholder-content" style={{ marginTop: '20px' }}>
+                      <div className="contact-details-grid" style={{ marginBottom: '20px' }}>
+                        <div className="contact-column">
+                          <div className="contact-field" style={{ marginBottom: '12px' }}>
+                            <span className="label">Bank Name</span>
+                            <span className="value">HDFC Bank Limited</span>
+                          </div>
+                          <div className="contact-field" style={{ marginBottom: '12px' }}>
+                            <span className="label">Account Number</span>
+                            <span className="value">XXXX XXXX 4589</span>
+                          </div>
+                        </div>
+                        <div className="contact-column">
+                          <div className="contact-field" style={{ marginBottom: '12px' }}>
+                            <span className="label">IFSC Code</span>
+                            <span className="value">HDFC0001234</span>
+                          </div>
+                          <div className="contact-field" style={{ marginBottom: '12px' }}>
+                            <span className="label">Account Holder Name</span>
+                            <span className="value">John Doe</span>
+                          </div>
+                        </div>
+                      </div>
+                      <button type="button" className="btn btn-primary" onClick={() => alert('Bank change request started.')}>
+                        Request Bank Change
+                      </button>
+                    </div>
+                  )}
+
+                  {activeProfileTab === 'Documents & IDs' && (
+                    <div className="docs-placeholder-content" style={{ marginTop: '20px' }}>
+                      <div className="requests-list">
+                        <div className="request-item" style={{ padding: '12px', borderBottom: '1px solid var(--line)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <div className="request-info" style={{ display: 'flex', flexDirection: 'column' }}>
+                            <span className="request-type" style={{ fontWeight: '600' }}>Passport</span>
+                            <span className="request-date" style={{ fontSize: '12px', color: 'var(--muted)' }}>Identity Proof · Verified</span>
+                          </div>
+                          <button type="button" className="btn">Download</button>
+                        </div>
+                        <div className="request-item" style={{ padding: '12px', borderBottom: '1px solid var(--line)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <div className="request-info" style={{ display: 'flex', flexDirection: 'column' }}>
+                            <span className="request-type" style={{ fontWeight: '600' }}>Aadhaar Card</span>
+                            <span className="request-date" style={{ fontSize: '12px', color: 'var(--muted)' }}>Identity Proof · Verified</span>
+                          </div>
+                          <button type="button" className="btn">Download</button>
+                        </div>
+                        <div className="request-item" style={{ padding: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <div className="request-info" style={{ display: 'flex', flexDirection: 'column' }}>
+                            <span className="request-type" style={{ fontWeight: '600' }}>PAN Card</span>
+                            <span className="request-date" style={{ fontSize: '12px', color: 'var(--muted)' }}>Tax Document · Verified</span>
+                          </div>
+                          <button type="button" className="btn">Download</button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {activeProfileTab === 'Skills' && (
+                    <div className="skills-placeholder-content" style={{ marginTop: '20px' }}>
+                      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '20px' }}>
+                        {['React', 'TypeScript', 'CSS', 'Vite', 'HTML5', 'Node.js'].map((skill) => (
+                          <span key={skill} className="verified-badge active" style={{ borderRadius: '6px', fontSize: '13px', padding: '6px 12px' }}>{skill}</span>
+                        ))}
+                      </div>
+                      <div style={{ display: 'flex', gap: '10px' }}>
+                        <input type="text" placeholder="Add custom skill" className="form-input" style={{ width: '200px', background: '#303057', border: '1px solid #3f3f66', padding: '6px 12px', borderRadius: '6px', color: '#fff' }} />
+                        <button type="button" className="btn btn-primary" onClick={() => alert('Skill added')}>Add</button>
+                      </div>
+                    </div>
+                  )}
+
+                  {activeProfileTab === 'Preferences' && (
+                    <div className="preferences-placeholder-content" style={{ marginTop: '20px' }}>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
+                        <input type="checkbox" defaultChecked />
+                        <span>Receive monthly payslip alerts via email</span>
+                      </label>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
+                        <input type="checkbox" defaultChecked />
+                        <span>Receive leave application approval notifications</span>
+                      </label>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <input type="checkbox" />
+                        <span>Enable dark mode by default</span>
+                      </label>
+                    </div>
+                  )}
+
+                  {activeProfileTab === 'Change Requests' && (
+                    <div className="requests-placeholder-content" style={{ marginTop: '20px' }}>
+                      <div className="requests-list">
+                        {profileChangeRequests.map((req) => (
+                          <div key={req.id} className="request-item" style={{ padding: '12px', borderBottom: '1px solid var(--line)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div className="request-info" style={{ display: 'flex', flexDirection: 'column' }}>
+                              <span className="request-type" style={{ fontWeight: '600' }}>{req.type}</span>
+                              <span className="request-date" style={{ fontSize: '12px', color: 'var(--muted)' }}>Submitted on {req.requestedDate}</span>
+                            </div>
+                            <span className={`request-status-pill ${req.status.toLowerCase()}`}>
+                              {req.status}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Modals */}
+              {isEmergencyModalOpen && (
+                <div className="time-modal-backdrop" role="presentation" onClick={() => setIsEmergencyModalOpen(false)}>
+                  <div
+                    className="time-modal"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-label={`${emergencyModalMode === 'add' ? 'Add' : 'Edit'} Emergency Contact`}
+                    onClick={(event) => event.stopPropagation()}
+                  >
+                    <h3>{emergencyModalMode === 'add' ? 'Add Emergency Contact' : 'Edit Emergency Contact'}</h3>
+                    {emergencyError && <p className="submit-error" style={{ marginBottom: '10px' }}>{emergencyError}</p>}
+                    <div className="leave-form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '12px', marginTop: '16px' }}>
+                      <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', textAlign: 'left' }}>
+                        Contact Name
+                        <input
+                          type="text"
+                          value={emergencyForm.name}
+                          onChange={(e) => setEmergencyForm({ ...emergencyForm, name: e.target.value })}
+                          placeholder="e.g. Jane Doe"
+                          style={{ background: '#303057', border: '1px solid #3f3f66', color: '#fff', padding: '8px 12px', borderRadius: '6px' }}
+                        />
+                      </label>
+                      <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', textAlign: 'left' }}>
+                        Relationship
+                        <input
+                          type="text"
+                          value={emergencyForm.relationship}
+                          onChange={(e) => setEmergencyForm({ ...emergencyForm, relationship: e.target.value })}
+                          placeholder="e.g. Sister, Father"
+                          style={{ background: '#303057', border: '1px solid #3f3f66', color: '#fff', padding: '8px 12px', borderRadius: '6px' }}
+                        />
+                      </label>
+                      <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', textAlign: 'left' }}>
+                        Phone Number
+                        <input
+                          type="text"
+                          value={emergencyForm.phone}
+                          onChange={(e) => setEmergencyForm({ ...emergencyForm, phone: e.target.value })}
+                          placeholder="e.g. +91 98765 11111"
+                          style={{ background: '#303057', border: '1px solid #3f3f66', color: '#fff', padding: '8px 12px', borderRadius: '6px' }}
+                        />
+                      </label>
+                      <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', textAlign: 'left' }}>
+                        Email Address
+                        <input
+                          type="email"
+                          value={emergencyForm.email}
+                          onChange={(e) => setEmergencyForm({ ...emergencyForm, email: e.target.value })}
+                          placeholder="e.g. jane.doe@gmail.com"
+                          style={{ background: '#303057', border: '1px solid #3f3f66', color: '#fff', padding: '8px 12px', borderRadius: '6px' }}
+                        />
+                      </label>
+                    </div>
+                    <div className="time-modal-actions" style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '20px' }}>
+                      <button type="button" className="btn" onClick={() => setIsEmergencyModalOpen(false)}>Cancel</button>
+                      <button type="button" className="btn btn-primary" onClick={handleSaveEmergencyContact}>Save</button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {isRequestChangeModalOpen && (
+                <div className="time-modal-backdrop" role="presentation" onClick={() => setIsRequestChangeModalOpen(false)}>
+                  <div
+                    className="time-modal"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-label="Request Profile Change"
+                    onClick={(event) => event.stopPropagation()}
+                  >
+                    <h3>Raise Change Request</h3>
+                    <p style={{ fontSize: '13px', color: 'var(--muted)', marginTop: '4px' }}>Submit a request to update your personal details.</p>
+                    {requestChangeError && <p className="submit-error" style={{ margin: '10px 0' }}>{requestChangeError}</p>}
+                    <div className="leave-form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '12px', marginTop: '16px' }}>
+                      <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', textAlign: 'left' }}>
+                        Field to Update
+                        <select
+                          value={requestChangeField}
+                          onChange={(e) => setRequestChangeField(e.target.value)}
+                          style={{ background: '#303057', border: '1px solid #3f3f66', color: '#fff', padding: '8px 12px', borderRadius: '6px' }}
+                        >
+                          <option value="First Name">First Name</option>
+                          <option value="Middle Name">Middle Name</option>
+                          <option value="Last Name">Last Name</option>
+                          <option value="Preferred Name">Preferred Name</option>
+                          <option value="Date of Birth">Date of Birth</option>
+                          <option value="Gender">Gender</option>
+                          <option value="Marital Status">Marital Status</option>
+                          <option value="Nationality">Nationality</option>
+                          <option value="PAN Number">PAN Number</option>
+                          <option value="Aadhaar Number">Aadhaar Number</option>
+                        </select>
+                      </label>
+                      <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', textAlign: 'left' }}>
+                        New Value
+                        <input
+                          type="text"
+                          value={requestChangeNewValue}
+                          onChange={(e) => setRequestChangeNewValue(e.target.value)}
+                          placeholder="Enter new details"
+                          style={{ background: '#303057', border: '1px solid #3f3f66', color: '#fff', padding: '8px 12px', borderRadius: '6px' }}
+                        />
+                      </label>
+                      <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', textAlign: 'left' }}>
+                        Reason for Change
+                        <textarea
+                          rows={3}
+                          value={requestChangeReason}
+                          onChange={(e) => setRequestChangeReason(e.target.value)}
+                          placeholder="Why are you making this change request?"
+                          style={{ background: '#303057', border: '1px solid #3f3f66', color: '#fff', padding: '8px 12px', borderRadius: '6px', resize: 'none' }}
+                        />
+                      </label>
+                    </div>
+                    <div className="time-modal-actions" style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '20px' }}>
+                      <button type="button" className="btn" onClick={() => setIsRequestChangeModalOpen(false)}>Cancel</button>
+                      <button type="button" className="btn btn-primary" onClick={handleSubmitChangeRequest}>Submit Request</button>
                     </div>
                   </div>
                 </div>
