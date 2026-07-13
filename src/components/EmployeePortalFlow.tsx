@@ -1268,20 +1268,20 @@ export function EmployeePortalFlow(_props: EmployeePortalFlowProps) {
 
   // Profile state
   const [activeProfileTab, setActiveProfileTab] = useState<ProfileTab>('Overview')
-  const [personalInfo, setPersonalInfo] = useState<PersonalInfo>(personalInfoSeed)
+  const [personalInfo] = useState<PersonalInfo>(personalInfoSeed)
   const [contactDetails, setContactDetails] = useState<ContactDetails>(contactDetailsSeed)
   const [emergencyContacts, setEmergencyContacts] = useState<EmergencyContact[]>(emergencyContactsSeed)
   const [profileChangeRequests, setProfileChangeRequests] = useState<ProfileChangeRequest[]>(profileChangeRequestsSeed)
 
   // Remaining Profile Tabs States
-  const [bankDetails, setBankDetails] = useState<BankDetails>({
+  const [bankDetails] = useState<BankDetails>({
     bankName: 'HDFC Bank Limited',
     accountNumber: 'XXXX XXXX 4589',
     ifscCode: 'HDFC0001234',
     accountHolderName: 'John Doe',
     verified: true,
   })
-  const [identityDocs, setIdentityDocs] = useState<IdentityDocument[]>(identityDocumentsSeed)
+  const [identityDocs] = useState<IdentityDocument[]>(identityDocumentsSeed)
   const [profileSkills, setProfileSkills] = useState<ProfileSkill[]>(profileSkillsSeed)
   const [profileEducation, setProfileEducation] = useState<ProfileEducation[]>(profileEducationSeed)
   const [profileCertifications, setProfileCertifications] = useState<ProfileCertification[]>(profileCertificationsSeed)
@@ -1352,7 +1352,7 @@ export function EmployeePortalFlow(_props: EmployeePortalFlowProps) {
 
   // Preferences feedback
   const [preferencesSaveSuccess, setPreferencesSaveSuccess] = useState(false)
-  const [preferenceSaveError, setPreferenceSaveError] = useState('')
+
 
 
   // Profile temporary/edit states
@@ -1521,8 +1521,14 @@ export function EmployeePortalFlow(_props: EmployeePortalFlowProps) {
     }
 
     setProfileChangeRequests((prev) => [newRequest, ...prev])
-    setIsRequestChangeModalOpen(false)
-    alert('Change request submitted successfully!')
+    setRequestChangeNewValue('')
+    setRequestChangeReason('')
+    setRequestChangeError('')
+    setRequestChangeSuccess('Change request submitted successfully! HR will review and update you.')
+    setTimeout(() => {
+      setIsRequestChangeModalOpen(false)
+      setRequestChangeSuccess('')
+    }, 2000)
   }
 
   // Remaining Profile Action Handlers
@@ -1557,8 +1563,11 @@ export function EmployeePortalFlow(_props: EmployeePortalFlowProps) {
       comments: 'Awaiting HR approval',
     }
     setProfileChangeRequests((prev) => [newRequest, ...prev])
-    setIsBankChangeModalOpen(false)
-    alert('Bank change request submitted successfully!')
+    setBankChangeSuccess(true)
+    setTimeout(() => {
+      setIsBankChangeModalOpen(false)
+      setBankChangeSuccess(false)
+    }, 1800)
   }
 
   const handleOpenAddSkill = () => {
@@ -5969,6 +5978,11 @@ export function EmployeePortalFlow(_props: EmployeePortalFlowProps) {
                         />
                       </label>
                     </div>
+                    {requestChangeSuccess && (
+                      <p style={{ color: '#4ade80', background: 'rgba(74,222,128,0.1)', border: '1px solid rgba(74,222,128,0.3)', borderRadius: '6px', padding: '8px 12px', marginTop: '12px', fontSize: '13px' }}>
+                        ✓ {requestChangeSuccess}
+                      </p>
+                    )}
                     <div className="time-modal-actions" style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '20px' }}>
                       <button type="button" className="btn" onClick={() => setIsRequestChangeModalOpen(false)}>Cancel</button>
                       <button type="button" className="btn btn-primary" onClick={handleSubmitChangeRequest}>Submit Request</button>
@@ -6041,6 +6055,11 @@ export function EmployeePortalFlow(_props: EmployeePortalFlowProps) {
                         />
                       </label>
                     </div>
+                    {bankChangeSuccess && (
+                      <p style={{ color: '#4ade80', background: 'rgba(74,222,128,0.1)', border: '1px solid rgba(74,222,128,0.3)', borderRadius: '6px', padding: '8px 12px', marginTop: '12px', fontSize: '13px' }}>
+                        ✓ Bank change request submitted! Closing…
+                      </p>
+                    )}
                     <div className="time-modal-actions" style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '20px' }}>
                       <button type="button" className="btn" onClick={() => setIsBankChangeModalOpen(false)}>Cancel</button>
                       <button type="button" className="btn btn-primary" onClick={handleSaveBankChange}>Submit</button>
