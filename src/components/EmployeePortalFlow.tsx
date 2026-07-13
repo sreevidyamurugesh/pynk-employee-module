@@ -164,7 +164,7 @@ type DocumentTab = (typeof documentTabs)[number]
 interface PortalDocument {
   id: string
   name: string
-  description: string
+  description?: string
   issuedOn?: string
   monthYear?: string
   financialYear?: string
@@ -1076,17 +1076,17 @@ export function EmployeePortalFlow(_props: EmployeePortalFlowProps) {
   const [docCurrentPage, setDocCurrentPage] = useState(1)
   const [taxYearFilter, setTaxYearFilter] = useState('2024-25')
   const [docStatusFilter, setDocStatusFilter] = useState('All')
-  
+
   const [uploadedDocsState, setUploadedDocsState] = useState<PortalDocument[]>(uploadedDocsSeed)
   const [isDocUploadModalOpen, setIsDocUploadModalOpen] = useState(false)
   const [docUploadName, setDocUploadName] = useState('')
   const [docUploadCategory, setDocUploadCategory] = useState('')
   const [docUploadFile, setDocUploadFile] = useState<File | null>(null)
   const [docUploadError, setDocUploadError] = useState('')
-  
+
   const [docPreview, setDocPreview] = useState<PortalDocument | null>(null)
   const [docNotification, setDocNotification] = useState<string | null>(null)
-  
+
   const DOCS_PER_PAGE = 5
 
   const handleDownloadDoc = (doc: PortalDocument) => {
@@ -3267,6 +3267,7 @@ export function EmployeePortalFlow(_props: EmployeePortalFlowProps) {
                         </div>
 
                         {bankUpdateError && <p className="pay-form-error">{bankUpdateError}</p>}
+                        {bankUpdateSuccess && <p className="pay-form-success">{bankUpdateSuccess}</p>}
 
                         <div className="pay-modal-actions">
                           <button type="button" className="btn" onClick={() => setBankUpdateModalOpen(false)}>Cancel</button>
@@ -3543,7 +3544,7 @@ export function EmployeePortalFlow(_props: EmployeePortalFlowProps) {
                         </thead>
                         <tbody>
                           {(() => {
-                            let source = []
+                            let source: PortalDocument[] = []
                             if (activeDocTab === 'Employment Documents') source = employmentDocsSeed
                             else if (activeDocTab === 'Payroll Documents') source = payrollDocsSeed
                             else if (activeDocTab === 'Tax Documents') source = taxDocsSeed
@@ -3551,19 +3552,20 @@ export function EmployeePortalFlow(_props: EmployeePortalFlowProps) {
                             else if (activeDocTab === 'Expiring Documents') source = [uploadedDocsState[1]]
 
                             let filtered = source.filter(d => d.name.toLowerCase().includes(docSearchQuery.toLowerCase()))
-                            
+
                             if (activeDocTab === 'Tax Documents') {
                               filtered = filtered.filter(d => d.financialYear === taxYearFilter)
                             }
-                            
+
                             if (docStatusFilter !== 'All') {
-                               filtered = filtered.filter(d => {
-                                 if (docStatusFilter === 'Pending') return d.status === 'Pending Verification'
-                                 return d.status === docStatusFilter
-                               })
+                              filtered = filtered.filter(d => {
+                                if (docStatusFilter === 'Pending') return d.status === 'Pending Verification'
+                                return d.status === docStatusFilter
+                              })
                             }
 
-                            const totalItems = filtered.length
+                            const totalItems: number = filtered.length
+                            if (totalItems === 0) return 'Showing 0 documents'
                             const startIndex = (docCurrentPage - 1) * DOCS_PER_PAGE
                             const paginated = filtered.slice(startIndex, startIndex + DOCS_PER_PAGE)
 
@@ -3609,45 +3611,45 @@ export function EmployeePortalFlow(_props: EmployeePortalFlowProps) {
                     <div className="doc-pagination" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <span className="doc-pagination-info">
                         {(() => {
-                            let source = []
-                            if (activeDocTab === 'Employment Documents') source = employmentDocsSeed
-                            else if (activeDocTab === 'Payroll Documents') source = payrollDocsSeed
-                            else if (activeDocTab === 'Tax Documents') source = taxDocsSeed
-                            else if (activeDocTab === 'Uploaded Documents') source = uploadedDocsState
-                            else if (activeDocTab === 'Expiring Documents') source = [uploadedDocsState[1]]
-                            
-                            let filtered = source.filter(d => d.name.toLowerCase().includes(docSearchQuery.toLowerCase()))
-                            if (activeDocTab === 'Tax Documents') {
-                              filtered = filtered.filter(d => d.financialYear === taxYearFilter)
-                            }
-                            if (docStatusFilter !== 'All') {
-                               filtered = filtered.filter(d => d.status === (docStatusFilter === 'Pending' ? 'Pending Verification' : docStatusFilter))
-                            }
-                            
-                            const totalItems = filtered.length
-                            if (totalItems === 0) return 'Showing 0 documents'
-                            const start = (docCurrentPage - 1) * DOCS_PER_PAGE + 1
-                            const end = Math.min(docCurrentPage * DOCS_PER_PAGE, totalItems)
-                            return `Showing ${start} to ${end} of ${totalItems} documents`
+                          let source: PortalDocument[] = []
+                          if (activeDocTab === 'Employment Documents') source = employmentDocsSeed
+                          else if (activeDocTab === 'Payroll Documents') source = payrollDocsSeed
+                          else if (activeDocTab === 'Tax Documents') source = taxDocsSeed
+                          else if (activeDocTab === 'Uploaded Documents') source = uploadedDocsState
+                          else if (activeDocTab === 'Expiring Documents') source = [uploadedDocsState[1]]
+
+                          let filtered = source.filter(d => d.name.toLowerCase().includes(docSearchQuery.toLowerCase()))
+                          if (activeDocTab === 'Tax Documents') {
+                            filtered = filtered.filter(d => d.financialYear === taxYearFilter)
+                          }
+                          if (docStatusFilter !== 'All') {
+                            filtered = filtered.filter(d => d.status === (docStatusFilter === 'Pending' ? 'Pending Verification' : docStatusFilter))
+                          }
+
+                          const totalItems = filtered.length
+                          if (totalItems === 0) return 'Showing 0 documents'
+                          const start = (docCurrentPage - 1) * DOCS_PER_PAGE + 1
+                          const end = Math.min(docCurrentPage * DOCS_PER_PAGE, totalItems)
+                          return `Showing ${start} to ${end} of ${totalItems} documents`
                         })()}
                       </span>
                       <div className="doc-pagination-controls" style={{ display: 'flex', gap: '8px' }}>
                         <button type="button" className="btn" disabled={docCurrentPage === 1} onClick={() => setDocCurrentPage(p => Math.max(1, p - 1))}>Prev</button>
                         <button type="button" className="btn" disabled={
                           (() => {
-                            let source = []
+                            let source: PortalDocument[] = []
                             if (activeDocTab === 'Employment Documents') source = employmentDocsSeed
                             else if (activeDocTab === 'Payroll Documents') source = payrollDocsSeed
                             else if (activeDocTab === 'Tax Documents') source = taxDocsSeed
                             else if (activeDocTab === 'Uploaded Documents') source = uploadedDocsState
                             else if (activeDocTab === 'Expiring Documents') source = [uploadedDocsState[1]]
-                            
+
                             let filtered = source.filter(d => d.name.toLowerCase().includes(docSearchQuery.toLowerCase()))
                             if (activeDocTab === 'Tax Documents') {
                               filtered = filtered.filter(d => d.financialYear === taxYearFilter)
                             }
                             if (docStatusFilter !== 'All') {
-                               filtered = filtered.filter(d => d.status === (docStatusFilter === 'Pending' ? 'Pending Verification' : docStatusFilter))
+                              filtered = filtered.filter(d => d.status === (docStatusFilter === 'Pending' ? 'Pending Verification' : docStatusFilter))
                             }
                             return docCurrentPage >= Math.ceil(filtered.length / DOCS_PER_PAGE)
                           })()
@@ -3730,7 +3732,7 @@ export function EmployeePortalFlow(_props: EmployeePortalFlowProps) {
                         </div>
                         <div className="time-modal-body" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px', padding: '32px' }}>
                           <span style={{ fontSize: '48px' }}>📄</span>
-                          <p style={{ textAlign: 'center', color: '#9ea2bd', margin: 0 }}>This is a preview of the document.<br/>(Preview not available in demo)</p>
+                          <p style={{ textAlign: 'center', color: '#9ea2bd', margin: 0 }}>This is a preview of the document.<br />(Preview not available in demo)</p>
                           <div style={{ marginTop: '16px', display: 'flex', gap: '8px', fontSize: '13px', color: '#c6c8de' }}>
                             <span>Size: {docPreview.size}</span>
                             <span>|</span>
