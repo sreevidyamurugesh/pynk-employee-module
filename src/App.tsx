@@ -56,15 +56,15 @@ function App() {
   const personaTabs: Record<PersonaKey, { label: string; subtitle: string }> =
     flowType === 'run'
       ? {
-          employee: { label: 'Employee', subtitle: 'Self-service payroll' },
-          admin: { label: 'Payroll Administrator', subtitle: 'Payroll Control Center' },
-          manager: { label: 'Manager', subtitle: 'Payroll approvals' },
-        }
+        employee: { label: 'Employee', subtitle: 'Self-service payroll' },
+        admin: { label: 'Payroll Administrator', subtitle: 'Payroll Control Center' },
+        manager: { label: 'Manager', subtitle: 'Payroll approvals' },
+      }
       : {
-          employee: { label: 'Employee', subtitle: 'My pay results' },
-          admin: { label: 'Payroll Administrator', subtitle: 'Run results & reports' },
-          manager: { label: 'Manager', subtitle: 'Team cost reporting' },
-        }
+        employee: { label: 'Employee', subtitle: 'My pay results' },
+        admin: { label: 'Payroll Administrator', subtitle: 'Run results & reports' },
+        manager: { label: 'Manager', subtitle: 'Team cost reporting' },
+      }
 
   const selectFlowType = (type: FlowType, personaKey?: PersonaKey) => {
     setFlowType(type)
@@ -74,7 +74,7 @@ function App() {
   }
 
   const selectPersona = (key: PersonaKey) => {
-    // update persona only for the current flow — do not switch flows
+    // update persona only for the current flow —- do not switch flows
     setPersonaByFlow((prev) => ({ ...prev, [flowType]: key }))
     setIndex(0)
     setMode('flow')
@@ -100,7 +100,7 @@ function App() {
     return portalUserType ? names[portalUserType] : ''
   }
 
-  const headerSubtitle = activeMenu === 'employee' 
+  const headerSubtitle = activeMenu === 'employee'
     ? 'HR Suite · Employee Portal'
     : flowType === 'run' ? 'HR Suite · Payroll' : 'HR Suite · Payroll Results'
 
@@ -114,15 +114,15 @@ function App() {
   if (!portalLoggedIn) {
     return (
       <div className="app-shell login-mode">
-        <EmployeeMenu 
-          onSelectOption={(optionId) => console.log('Selected:', optionId)} 
+        <EmployeeMenu
+          onSelectOption={(optionId) => console.log('Selected:', optionId)}
           onLoginStateChange={(loggedIn) => {
             setPortalLoggedIn(loggedIn)
             if (loggedIn) {
               setActiveMenu('employee')
             }
           }}
-          onUserTypeChange={setPortalUserType} 
+          onUserTypeChange={setPortalUserType}
         />
       </div>
     )
@@ -209,63 +209,63 @@ function App() {
       </nav>
 
       <>
-      {activeMenu !== 'employee' && sidebarOpen && (
-        <div className="sidebar-backdrop" onClick={() => setSidebarOpen(false)} aria-hidden="true" />
-      )}
-      <div className={`main-grid ${sidebarOpen ? 'sidebar-open' : 'sidebar-closed'}`}>
-        {activeMenu !== 'employee' && (
-          <aside className={`side-menu ${sidebarOpen ? '' : 'closed'}`} aria-label="Payroll navigation">
-            <button className="sidebar-close" type="button" onClick={() => setSidebarOpen(false)}>
-              ✕
-            </button>
-            <button
-              type="button"
-              className={`menu-btn ${activeMenu === 'payroll' ? 'active' : ''}`}
-              onClick={() => { setActiveMenu('payroll'); selectFlowType('run'); setSidebarOpen(false) }}
-            >
-              Payroll
-            </button>
-            <button
-              type="button"
-              className={`menu-btn ${activeMenu === 'results' ? 'active' : ''}`}
-              onClick={() => { setActiveMenu('results'); selectFlowType('output'); setSidebarOpen(false) }}
-            >
-              Payroll results
-            </button>
-            <button
-              type="button"
-              className="menu-btn"
-              onClick={() => { setActiveMenu('employee'); setSidebarOpen(false) }}
-            >
-              Employee
-            </button>
-          </aside>
+        {activeMenu !== 'employee' && sidebarOpen && (
+          <div className="sidebar-backdrop" onClick={() => setSidebarOpen(false)} aria-hidden="true" />
         )}
+        <div className={`main-grid ${sidebarOpen ? 'sidebar-open' : 'sidebar-closed'}`}>
+          {activeMenu !== 'employee' && (
+            <aside className={`side-menu ${sidebarOpen ? '' : 'closed'}`} aria-label="Payroll navigation">
+              <button className="sidebar-close" type="button" onClick={() => setSidebarOpen(false)}>
+                ✕
+              </button>
+              <button
+                type="button"
+                className={`menu-btn ${activeMenu === 'payroll' ? 'active' : ''}`}
+                onClick={() => { setActiveMenu('payroll'); selectFlowType('run'); setSidebarOpen(false) }}
+              >
+                Payroll
+              </button>
+              <button
+                type="button"
+                className={`menu-btn ${activeMenu === 'results' ? 'active' : ''}`}
+                onClick={() => { setActiveMenu('results'); selectFlowType('output'); setSidebarOpen(false) }}
+              >
+                Payroll results
+              </button>
+              <button
+                type="button"
+                className="menu-btn"
+                onClick={() => { setActiveMenu('employee'); setSidebarOpen(false) }}
+              >
+                Employee
+              </button>
+            </aside>
+          )}
 
-        <main className="wrap" id="root">
-        {activeMenu === 'employee' ? (
-          <EmployeeMenu onSelectOption={(optionId) => console.log('Selected:', optionId)} onLoginStateChange={setPortalLoggedIn} onUserTypeChange={setPortalUserType} />
-        ) : flowType === 'run' ? (
-          <PayrollWalkthrough
-            current={current}
-            step={step}
-            index={index}
-            mode={mode}
-            setIndex={setIndex}
-            setMode={setMode}
-          />
-        ) : (
-          <PayrollOutputWalkthrough
-            current={current}
-            step={step}
-            index={index}
-            mode={mode}
-            setIndex={setIndex}
-            setMode={setMode}
-          />
-        )}
-      </main>
-      </div>
+          <main className="wrap" id="root">
+            {activeMenu === 'employee' ? (
+              <EmployeeMenu onSelectOption={(optionId) => console.log('Selected:', optionId)} onLoginStateChange={setPortalLoggedIn} onUserTypeChange={setPortalUserType} />
+            ) : flowType === 'run' ? (
+              <PayrollWalkthrough
+                current={current}
+                step={step}
+                index={index}
+                mode={mode}
+                setIndex={setIndex}
+                setMode={setMode}
+              />
+            ) : (
+              <PayrollOutputWalkthrough
+                current={current}
+                step={step}
+                index={index}
+                mode={mode}
+                setIndex={setIndex}
+                setMode={setMode}
+              />
+            )}
+          </main>
+        </div>
       </>
     </div>
   )
