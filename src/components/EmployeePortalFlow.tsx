@@ -211,9 +211,65 @@ interface EmergencyContact {
 interface ProfileChangeRequest {
   id: string
   type: string
+  description: string
   requestedDate: string
   status: 'Pending' | 'Approved' | 'Rejected'
+  comments: string
 }
+
+interface IdentityDocument {
+  id: string
+  name: string
+  number: string
+  issueDate: string
+  expiryDate: string
+  status: 'Verified' | 'Pending' | 'Rejected'
+}
+
+interface ProfileSkill {
+  id: string
+  name: string
+  proficiency: 'Beginner' | 'Intermediate' | 'Advanced' | 'Expert'
+  experience: number
+}
+
+interface ProfileEducation {
+  id: string
+  degree: string
+  institution: string
+  fieldOfStudy: string
+  yearOfPassing: string
+}
+
+interface ProfileCertification {
+  id: string
+  name: string
+  issuingOrg: string
+  issueDate: string
+  expiryDate: string
+  credentialId: string
+}
+
+interface ProfileLanguage {
+  id: string
+  name: string
+  proficiency: 'Beginner' | 'Conversational' | 'Professional' | 'Fluent' | 'Native / Bilingual'
+}
+
+interface ProfilePreferences {
+  preferredLanguage: string
+  timeZone: string
+  dateFormat: string
+  timeFormat: string
+  emailNotifications: {
+    leaveAttendance: boolean
+    payslipPayroll: boolean
+    companyAnnouncements: boolean
+    policyUpdates: boolean
+  }
+  theme: 'Light' | 'Dark' | 'System Default'
+}
+
 
 
 // ── Documents Types ──
@@ -411,10 +467,56 @@ const emergencyContactsSeed: EmergencyContact[] = [
 ]
 
 const profileChangeRequestsSeed: ProfileChangeRequest[] = [
-  { id: 'cr-001', type: 'Name Change', requestedDate: '12 Jun 2025', status: 'Pending' },
-  { id: 'cr-002', type: 'Date of Birth Change', requestedDate: '05 May 2025', status: 'Approved' },
-  { id: 'cr-003', type: 'PAN Update', requestedDate: '10 Apr 2025', status: 'Approved' },
+  { id: 'cr-001', type: 'Bank Account Change', description: 'Change account ending with 1234', requestedDate: '10 Jun 2025', status: 'Pending', comments: 'Awaiting HR approval' },
+  { id: 'cr-002', type: 'Personal Email Change', description: 'Update personal email address', requestedDate: '05 May 2025', status: 'Approved', comments: 'Email updated successfully' },
+  { id: 'cr-003', type: 'Address Change', description: 'Update permanent address', requestedDate: '20 Apr 2025', status: 'Approved', comments: 'Address updated' },
+  { id: 'cr-004', type: 'PAN Update', description: 'Update PAN number', requestedDate: '15 Mar 2025', status: 'Rejected', comments: 'Invalid PAN document' },
 ]
+
+const identityDocumentsSeed: IdentityDocument[] = [
+  { id: 'id-001', name: 'Passport', number: 'P1234567', issueDate: '10 Jan 2023', expiryDate: '09 Jan 2033', status: 'Verified' },
+  { id: 'id-002', name: 'Aadhaar Card', number: 'XXXX XXXX 4589', issueDate: '10 Jan 2020', expiryDate: '-', status: 'Verified' },
+  { id: 'id-003', name: 'PAN Card', number: 'ABCDE1234F', issueDate: '15 Feb 2019', expiryDate: '-', status: 'Verified' },
+  { id: 'id-004', name: 'Driving License', number: 'KA05 20190012345', issueDate: '20 Mar 2021', expiryDate: '19 Mar 2031', status: 'Verified' },
+  { id: 'id-005', name: 'Work Permit', number: 'WP123456', issueDate: '01 Apr 2023', expiryDate: '31 Mar 2026', status: 'Verified' },
+  { id: 'id-006', name: 'Visa', number: 'V1234567', issueDate: '01 Apr 2023', expiryDate: '31 Mar 2026', status: 'Verified' },
+]
+
+const profileSkillsSeed: ProfileSkill[] = [
+  { id: 'sk-001', name: 'JavaScript', proficiency: 'Expert', experience: 5 },
+  { id: 'sk-002', name: 'React', proficiency: 'Expert', experience: 4 },
+  { id: 'sk-003', name: 'Node.js', proficiency: 'Advanced', experience: 3 },
+  { id: 'sk-004', name: 'SQL', proficiency: 'Advanced', experience: 4 },
+  { id: 'sk-005', name: 'AWS', proficiency: 'Intermediate', experience: 2 },
+]
+
+const profileEducationSeed: ProfileEducation[] = [
+  { id: 'edu-001', degree: 'Bachelor of Engineering', institution: 'Visvesvaraya Technological University (VTU)', fieldOfStudy: 'Computer Science', yearOfPassing: '2014' },
+]
+
+const profileCertificationsSeed: ProfileCertification[] = [
+  { id: 'cert-001', name: 'AWS Certified Solutions Architect', issuingOrg: 'Amazon Web Services', issueDate: '12 Dec 2024', expiryDate: '12 Dec 2027', credentialId: 'AWS-12345' },
+]
+
+const profileLanguagesSeed: ProfileLanguage[] = [
+  { id: 'lang-001', name: 'English', proficiency: 'Native / Bilingual' },
+  { id: 'lang-002', name: 'Hindi', proficiency: 'Fluent' },
+]
+
+const profilePreferencesSeed: ProfilePreferences = {
+  preferredLanguage: 'English',
+  timeZone: '(GMT+05:30) Asia/Kolkata',
+  dateFormat: 'DD MMM YYYY',
+  timeFormat: '12 Hour',
+  emailNotifications: {
+    leaveAttendance: true,
+    payslipPayroll: true,
+    companyAnnouncements: true,
+    policyUpdates: true,
+  },
+  theme: 'Light',
+}
+
 
 
 
@@ -1171,6 +1273,88 @@ export function EmployeePortalFlow(_props: EmployeePortalFlowProps) {
   const [emergencyContacts, setEmergencyContacts] = useState<EmergencyContact[]>(emergencyContactsSeed)
   const [profileChangeRequests, setProfileChangeRequests] = useState<ProfileChangeRequest[]>(profileChangeRequestsSeed)
 
+  // Remaining Profile Tabs States
+  const [bankDetails, setBankDetails] = useState<BankDetails>({
+    bankName: 'HDFC Bank Limited',
+    accountNumber: 'XXXX XXXX 4589',
+    ifscCode: 'HDFC0001234',
+    accountHolderName: 'John Doe',
+    verified: true,
+  })
+  const [identityDocs, setIdentityDocs] = useState<IdentityDocument[]>(identityDocumentsSeed)
+  const [profileSkills, setProfileSkills] = useState<ProfileSkill[]>(profileSkillsSeed)
+  const [profileEducation, setProfileEducation] = useState<ProfileEducation[]>(profileEducationSeed)
+  const [profileCertifications, setProfileCertifications] = useState<ProfileCertification[]>(profileCertificationsSeed)
+  const [profileLanguages, setProfileLanguages] = useState<ProfileLanguage[]>(profileLanguagesSeed)
+  const [profilePreferences, setProfilePreferences] = useState<ProfilePreferences>(profilePreferencesSeed)
+
+  // Active sub-tab states
+  const [activeSkillsSubTab, setActiveSkillsSubTab] = useState<'Skills' | 'Education' | 'Certifications' | 'Languages'>('Skills')
+  const [activeChangeRequestsSubTab, setActiveChangeRequestsSubTab] = useState<'All Requests' | 'Pending' | 'Approved' | 'Rejected'>('All Requests')
+
+  // Bank Change Modal
+  const [isBankChangeModalOpen, setIsBankChangeModalOpen] = useState(false)
+  const [bankChangeForm, setBankChangeForm] = useState<BankUpdateForm>({
+    bankName: '',
+    accountNumber: '',
+    ifscCode: '',
+    accountHolderName: '',
+    reason: '',
+  })
+  const [bankChangeError, setBankChangeError] = useState('')
+  const [bankChangeSuccess, setBankChangeSuccess] = useState(false)
+
+  // Skills Modal
+  const [isSkillModalOpen, setIsSkillModalOpen] = useState(false)
+  const [skillModalMode, setSkillModalMode] = useState<'add' | 'edit'>('add')
+  const [editingSkillId, setEditingSkillId] = useState<string | null>(null)
+  const [skillForm, setSkillForm] = useState<Omit<ProfileSkill, 'id'>>({
+    name: '',
+    proficiency: 'Intermediate',
+    experience: 2,
+  })
+  const [skillError, setSkillError] = useState('')
+
+  // Education Modal
+  const [isEducationModalOpen, setIsEducationModalOpen] = useState(false)
+  const [educationModalMode, setEducationModalMode] = useState<'add' | 'edit'>('add')
+  const [editingEducationId, setEditingEducationId] = useState<string | null>(null)
+  const [educationForm, setEducationForm] = useState<Omit<ProfileEducation, 'id'>>({
+    degree: '',
+    institution: '',
+    fieldOfStudy: '',
+    yearOfPassing: '',
+  })
+  const [educationError, setEducationError] = useState('')
+
+  // Certification Modal
+  const [isCertificationModalOpen, setIsCertificationModalOpen] = useState(false)
+  const [certificationModalMode, setCertificationModalMode] = useState<'add' | 'edit'>('add')
+  const [editingCertificationId, setEditingCertificationId] = useState<string | null>(null)
+  const [certificationForm, setCertificationForm] = useState<Omit<ProfileCertification, 'id'>>({
+    name: '',
+    issuingOrg: '',
+    issueDate: '',
+    expiryDate: '',
+    credentialId: '',
+  })
+  const [certificationError, setCertificationError] = useState('')
+
+  // Language Modal
+  const [isLanguageModalOpen, setIsLanguageModalOpen] = useState(false)
+  const [languageModalMode, setLanguageModalMode] = useState<'add' | 'edit'>('add')
+  const [editingLanguageId, setEditingLanguageId] = useState<string | null>(null)
+  const [languageForm, setLanguageForm] = useState<Omit<ProfileLanguage, 'id'>>({
+    name: '',
+    proficiency: 'Conversational',
+  })
+  const [languageError, setLanguageError] = useState('')
+
+  // Preferences feedback
+  const [preferencesSaveSuccess, setPreferencesSaveSuccess] = useState(false)
+  const [preferenceSaveError, setPreferenceSaveError] = useState('')
+
+
   // Profile temporary/edit states
   const [isEditingContact, setIsEditingContact] = useState(false)
   const [contactEditForm, setContactEditForm] = useState<ContactDetails>(contactDetailsSeed)
@@ -1326,18 +1510,228 @@ export function EmployeePortalFlow(_props: EmployeePortalFlowProps) {
     const newRequest: ProfileChangeRequest = {
       id: `cr-${Date.now()}`,
       type: `${requestChangeField} Change`,
+      description: `Update ${requestChangeField.toLowerCase()} to "${requestChangeNewValue}"`,
       requestedDate: new Date().toLocaleDateString('en-GB', {
         day: '2-digit',
         month: 'short',
         year: 'numeric',
       }),
       status: 'Pending',
+      comments: 'Awaiting HR approval',
     }
 
     setProfileChangeRequests((prev) => [newRequest, ...prev])
     setIsRequestChangeModalOpen(false)
     alert('Change request submitted successfully!')
   }
+
+  // Remaining Profile Action Handlers
+  const handleOpenBankChange = () => {
+    setBankChangeForm({
+      bankName: bankDetails.bankName,
+      accountNumber: bankDetails.accountNumber,
+      ifscCode: bankDetails.ifscCode,
+      accountHolderName: bankDetails.accountHolderName,
+      reason: '',
+    })
+    setBankChangeError('')
+    setBankChangeSuccess(false)
+    setIsBankChangeModalOpen(true)
+  }
+
+  const handleSaveBankChange = () => {
+    if (!bankChangeForm.bankName || !bankChangeForm.accountNumber || !bankChangeForm.ifscCode || !bankChangeForm.accountHolderName || !bankChangeForm.reason) {
+      setBankChangeError('All fields are required.')
+      return
+    }
+    const newRequest: ProfileChangeRequest = {
+      id: `cr-${Date.now()}`,
+      type: 'Bank Account Change',
+      description: `Change account ending with ${bankChangeForm.accountNumber.slice(-4)}`,
+      requestedDate: new Date().toLocaleDateString('en-GB', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+      }),
+      status: 'Pending',
+      comments: 'Awaiting HR approval',
+    }
+    setProfileChangeRequests((prev) => [newRequest, ...prev])
+    setIsBankChangeModalOpen(false)
+    alert('Bank change request submitted successfully!')
+  }
+
+  const handleOpenAddSkill = () => {
+    setSkillForm({ name: '', proficiency: 'Intermediate', experience: 2 })
+    setSkillModalMode('add')
+    setEditingSkillId(null)
+    setSkillError('')
+    setIsSkillModalOpen(true)
+  }
+
+  const handleOpenEditSkill = (skill: ProfileSkill) => {
+    setSkillForm({ name: skill.name, proficiency: skill.proficiency, experience: skill.experience })
+    setSkillModalMode('edit')
+    setEditingSkillId(skill.id)
+    setSkillError('')
+    setIsSkillModalOpen(true)
+  }
+
+  const handleSaveSkill = () => {
+    if (!skillForm.name.trim() || skillForm.experience < 0) {
+      setSkillError('Please enter a valid skill name and experience.')
+      return
+    }
+    if (skillModalMode === 'add') {
+      const newSkill: ProfileSkill = {
+        id: `sk-${Date.now()}`,
+        name: skillForm.name,
+        proficiency: skillForm.proficiency,
+        experience: skillForm.experience,
+      }
+      setProfileSkills((prev) => [...prev, newSkill])
+    } else {
+      setProfileSkills((prev) => prev.map((s) => s.id === editingSkillId ? { ...s, ...skillForm } : s))
+    }
+    setIsSkillModalOpen(false)
+  }
+
+  const handleDeleteSkill = (id: string) => {
+    if (window.confirm('Are you sure you want to delete this skill?')) {
+      setProfileSkills((prev) => prev.filter((s) => s.id !== id))
+    }
+  }
+
+  const handleOpenAddEducation = () => {
+    setEducationForm({ degree: '', institution: '', fieldOfStudy: '', yearOfPassing: '' })
+    setEducationModalMode('add')
+    setEditingEducationId(null)
+    setEducationError('')
+    setIsEducationModalOpen(true)
+  }
+
+  const handleOpenEditEducation = (edu: ProfileEducation) => {
+    setEducationForm({ degree: edu.degree, institution: edu.institution, fieldOfStudy: edu.fieldOfStudy, yearOfPassing: edu.yearOfPassing })
+    setEducationModalMode('edit')
+    setEditingEducationId(edu.id)
+    setEducationError('')
+    setIsEducationModalOpen(true)
+  }
+
+  const handleSaveEducation = () => {
+    if (!educationForm.degree.trim() || !educationForm.institution.trim() || !educationForm.fieldOfStudy.trim() || !educationForm.yearOfPassing.trim()) {
+      setEducationError('All fields are required.')
+      return
+    }
+    if (educationModalMode === 'add') {
+      const newEdu: ProfileEducation = {
+        id: `edu-${Date.now()}`,
+        degree: educationForm.degree,
+        institution: educationForm.institution,
+        fieldOfStudy: educationForm.fieldOfStudy,
+        yearOfPassing: educationForm.yearOfPassing,
+      }
+      setProfileEducation((prev) => [...prev, newEdu])
+    } else {
+      setProfileEducation((prev) => prev.map((e) => e.id === editingEducationId ? { ...e, ...educationForm } : e))
+    }
+    setIsEducationModalOpen(false)
+  }
+
+  const handleDeleteEducation = (id: string) => {
+    if (window.confirm('Are you sure you want to delete this education record?')) {
+      setProfileEducation((prev) => prev.filter((e) => e.id !== id))
+    }
+  }
+
+  const handleOpenAddCertification = () => {
+    setCertificationForm({ name: '', issuingOrg: '', issueDate: '', expiryDate: '', credentialId: '' })
+    setCertificationModalMode('add')
+    setEditingCertificationId(null)
+    setCertificationError('')
+    setIsCertificationModalOpen(true)
+  }
+
+  const handleOpenEditCertification = (cert: ProfileCertification) => {
+    setCertificationForm({ name: cert.name, issuingOrg: cert.issuingOrg, issueDate: cert.issueDate, expiryDate: cert.expiryDate, credentialId: cert.credentialId })
+    setCertificationModalMode('edit')
+    setEditingCertificationId(cert.id)
+    setCertificationError('')
+    setIsCertificationModalOpen(true)
+  }
+
+  const handleSaveCertification = () => {
+    if (!certificationForm.name.trim() || !certificationForm.issuingOrg.trim() || !certificationForm.issueDate.trim()) {
+      setCertificationError('Certification Name, Issuing Org, and Issue Date are required.')
+      return
+    }
+    if (certificationModalMode === 'add') {
+      const newCert: ProfileCertification = {
+        id: `cert-${Date.now()}`,
+        name: certificationForm.name,
+        issuingOrg: certificationForm.issuingOrg,
+        issueDate: certificationForm.issueDate,
+        expiryDate: certificationForm.expiryDate || '-',
+        credentialId: certificationForm.credentialId || '-',
+      }
+      setProfileCertifications((prev) => [...prev, newCert])
+    } else {
+      setProfileCertifications((prev) => prev.map((c) => c.id === editingCertificationId ? { ...c, ...certificationForm } : c))
+    }
+    setIsCertificationModalOpen(false)
+  }
+
+  const handleDeleteCertification = (id: string) => {
+    if (window.confirm('Are you sure you want to delete this certification?')) {
+      setProfileCertifications((prev) => prev.filter((c) => c.id !== id))
+    }
+  }
+
+  const handleOpenAddLanguage = () => {
+    setLanguageForm({ name: '', proficiency: 'Conversational' })
+    setLanguageModalMode('add')
+    setEditingLanguageId(null)
+    setLanguageError('')
+    setIsLanguageModalOpen(true)
+  }
+
+  const handleOpenEditLanguage = (lang: ProfileLanguage) => {
+    setLanguageForm({ name: lang.name, proficiency: lang.proficiency })
+    setLanguageModalMode('edit')
+    setEditingLanguageId(lang.id)
+    setLanguageError('')
+    setIsLanguageModalOpen(true)
+  }
+
+  const handleSaveLanguage = () => {
+    if (!languageForm.name.trim()) {
+      setLanguageError('Language Name is required.')
+      return
+    }
+    if (languageModalMode === 'add') {
+      const newLang: ProfileLanguage = {
+        id: `lang-${Date.now()}`,
+        name: languageForm.name,
+        proficiency: languageForm.proficiency,
+      }
+      setProfileLanguages((prev) => [...prev, newLang])
+    } else {
+      setProfileLanguages((prev) => prev.map((l) => l.id === editingLanguageId ? { ...l, ...languageForm } : l))
+    }
+    setIsLanguageModalOpen(false)
+  }
+
+  const handleDeleteLanguage = (id: string) => {
+    if (window.confirm('Are you sure you want to delete this language?')) {
+      setProfileLanguages((prev) => prev.filter((l) => l.id !== id))
+    }
+  }
+
+  const handleSavePreferences = () => {
+    setPreferencesSaveSuccess(true)
+    setTimeout(() => setPreferencesSaveSuccess(false), 3000)
+  }
+
 
   // My Pay state
   const [payslipYear, setPayslipYear] = useState('2025')
@@ -4885,120 +5279,580 @@ export function EmployeePortalFlow(_props: EmployeePortalFlowProps) {
                 </div>
               )}
 
-              {/* Placeholder views for other tabs */}
-              {!['Overview', 'Personal', 'Contact', 'Employment', 'Emergency'].includes(activeProfileTab) && (
-                <div className="profile-card placeholder-tab-card">
-                  <h3>{activeProfileTab} Details</h3>
-                  <p>Details and settings for the {activeProfileTab} section are being processed.</p>
-                  
-                  {activeProfileTab === 'Bank' && (
-                    <div className="bank-details-placeholder-content" style={{ marginTop: '20px' }}>
-                      <div className="contact-details-grid" style={{ marginBottom: '20px' }}>
-                        <div className="contact-column">
-                          <div className="contact-field" style={{ marginBottom: '12px' }}>
-                            <span className="label">Bank Name</span>
-                            <span className="value">HDFC Bank Limited</span>
-                          </div>
-                          <div className="contact-field" style={{ marginBottom: '12px' }}>
-                            <span className="label">Account Number</span>
-                            <span className="value">XXXX XXXX 4589</span>
-                          </div>
+              {/* Bank Details */}
+              {activeProfileTab === 'Bank' && (
+                <div className="profile-personal-shell">
+                  <div className="profile-personal-grid">
+                    {/* Salary Account */}
+                    <div className="profile-card profile-personal-info-card">
+                      <h3>Salary Account</h3>
+                      <div className="contact-details-grid" style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: '20px', alignItems: 'center' }}>
+                        <div style={{ background: 'rgba(90, 125, 255, 0.1)', padding: '16px', borderRadius: '12px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                          <span style={{ fontSize: '48px' }}>🏦</span>
                         </div>
-                        <div className="contact-column">
-                          <div className="contact-field" style={{ marginBottom: '12px' }}>
-                            <span className="label">IFSC Code</span>
-                            <span className="value">HDFC0001234</span>
-                          </div>
-                          <div className="contact-field" style={{ marginBottom: '12px' }}>
-                            <span className="label">Account Holder Name</span>
-                            <span className="value">John Doe</span>
-                          </div>
-                        </div>
-                      </div>
-                      <button type="button" className="btn btn-primary" onClick={() => alert('Bank change request started.')}>
-                        Request Bank Change
-                      </button>
-                    </div>
-                  )}
-
-                  {activeProfileTab === 'Documents & IDs' && (
-                    <div className="docs-placeholder-content" style={{ marginTop: '20px' }}>
-                      <div className="requests-list">
-                        <div className="request-item" style={{ padding: '12px', borderBottom: '1px solid var(--line)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <div className="request-info" style={{ display: 'flex', flexDirection: 'column' }}>
-                            <span className="request-type" style={{ fontWeight: '600' }}>Passport</span>
-                            <span className="request-date" style={{ fontSize: '12px', color: 'var(--muted)' }}>Identity Proof · Verified</span>
-                          </div>
-                          <button type="button" className="btn">Download</button>
-                        </div>
-                        <div className="request-item" style={{ padding: '12px', borderBottom: '1px solid var(--line)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <div className="request-info" style={{ display: 'flex', flexDirection: 'column' }}>
-                            <span className="request-type" style={{ fontWeight: '600' }}>Aadhaar Card</span>
-                            <span className="request-date" style={{ fontSize: '12px', color: 'var(--muted)' }}>Identity Proof · Verified</span>
-                          </div>
-                          <button type="button" className="btn">Download</button>
-                        </div>
-                        <div className="request-item" style={{ padding: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <div className="request-info" style={{ display: 'flex', flexDirection: 'column' }}>
-                            <span className="request-type" style={{ fontWeight: '600' }}>PAN Card</span>
-                            <span className="request-date" style={{ fontSize: '12px', color: 'var(--muted)' }}>Tax Document · Verified</span>
-                          </div>
-                          <button type="button" className="btn">Download</button>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {activeProfileTab === 'Skills' && (
-                    <div className="skills-placeholder-content" style={{ marginTop: '20px' }}>
-                      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '20px' }}>
-                        {['React', 'TypeScript', 'CSS', 'Vite', 'HTML5', 'Node.js'].map((skill) => (
-                          <span key={skill} className="verified-badge active" style={{ borderRadius: '6px', fontSize: '13px', padding: '6px 12px' }}>{skill}</span>
-                        ))}
-                      </div>
-                      <div style={{ display: 'flex', gap: '10px' }}>
-                        <input type="text" placeholder="Add custom skill" className="form-input" style={{ width: '200px', background: '#303057', border: '1px solid #3f3f66', padding: '6px 12px', borderRadius: '6px', color: '#fff' }} />
-                        <button type="button" className="btn btn-primary" onClick={() => alert('Skill added')}>Add</button>
-                      </div>
-                    </div>
-                  )}
-
-                  {activeProfileTab === 'Preferences' && (
-                    <div className="preferences-placeholder-content" style={{ marginTop: '20px' }}>
-                      <label style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
-                        <input type="checkbox" defaultChecked />
-                        <span>Receive monthly payslip alerts via email</span>
-                      </label>
-                      <label style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
-                        <input type="checkbox" defaultChecked />
-                        <span>Receive leave application approval notifications</span>
-                      </label>
-                      <label style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <input type="checkbox" />
-                        <span>Enable dark mode by default</span>
-                      </label>
-                    </div>
-                  )}
-
-                  {activeProfileTab === 'Change Requests' && (
-                    <div className="requests-placeholder-content" style={{ marginTop: '20px' }}>
-                      <div className="requests-list">
-                        {profileChangeRequests.map((req) => (
-                          <div key={req.id} className="request-item" style={{ padding: '12px', borderBottom: '1px solid var(--line)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <div className="request-info" style={{ display: 'flex', flexDirection: 'column' }}>
-                              <span className="request-type" style={{ fontWeight: '600' }}>{req.type}</span>
-                              <span className="request-date" style={{ fontSize: '12px', color: 'var(--muted)' }}>Submitted on {req.requestedDate}</span>
+                        <div className="contact-details-grid">
+                          <div className="contact-column">
+                            <div className="contact-field">
+                              <span className="label">Bank Name</span>
+                              <div className="value-with-badge">
+                                <span className="value">{bankDetails.bankName}</span>
+                                <span className="verified-badge">Verified</span>
+                              </div>
                             </div>
-                            <span className={`request-status-pill ${req.status.toLowerCase()}`}>
-                              {req.status}
-                            </span>
+                            <div className="contact-field">
+                              <span className="label">Account Number</span>
+                              <span className="value">{bankDetails.accountNumber}</span>
+                            </div>
                           </div>
-                        ))}
+                          <div className="contact-column">
+                            <div className="contact-field">
+                              <span className="label">IFSC Code</span>
+                              <span className="value">{bankDetails.ifscCode}</span>
+                            </div>
+                            <div className="contact-field">
+                              <span className="label">Account Holder Name</span>
+                              <span className="value">{bankDetails.accountHolderName}</span>
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     </div>
-                  )}
+
+                    <div className="profile-personal-sidebar">
+                      {/* Need to update bank details? */}
+                      <div className="profile-card request-change-card">
+                        <h3>Need to update bank details?</h3>
+                        <div className="request-change-content">
+                          <p>Submit a request to update your bank account details. The request will be reviewed and approved by HR.</p>
+                          <button type="button" className="btn btn-primary" onClick={handleOpenBankChange}>
+                            Request Bank Change
+                          </button>
+                          <button type="button" className="btn-link" style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', fontSize: '13px', fontWeight: '600', marginTop: '8px' }} onClick={() => setActiveProfileTab('Change Requests')}>
+                            View Request Status &gt;
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Local Recent Requests */}
+                  <div className="profile-card" style={{ marginTop: '16px' }}>
+                    <h3>Recent Requests</h3>
+                    <div className="requests-list">
+                      {profileChangeRequests.filter(req => req.type.includes('Bank') || req.type.includes('Branch') || req.type.includes('Account')).map((req) => (
+                        <div key={req.id} className="request-item">
+                          <div className="request-info">
+                            <span className="request-type">{req.type}</span>
+                            <span className="request-date">Requested on {req.requestedDate}</span>
+                          </div>
+                          <span className={`request-status-pill ${req.status.toLowerCase()}`}>
+                            {req.status}
+                          </span>
+                        </div>
+                      ))}
+                      {profileChangeRequests.filter(req => req.type.includes('Bank') || req.type.includes('Branch') || req.type.includes('Account')).length === 0 && (
+                        <p style={{ fontSize: '13px', color: 'var(--muted)', margin: '10px 0 0' }}>No recent bank change requests.</p>
+                      )}
+                    </div>
+                  </div>
                 </div>
               )}
+
+              {/* Documents & IDs */}
+              {activeProfileTab === 'Documents & IDs' && (
+                <div className="profile-emergency-shell">
+                  <div className="profile-card emergency-card">
+                    <h3>Identity Documents</h3>
+                    <table className="emergency-contacts-table">
+                      <thead>
+                        <tr>
+                          <th>Document</th>
+                          <th>Number</th>
+                          <th>Issue Date</th>
+                          <th>Expiry Date</th>
+                          <th>Status</th>
+                          <th>Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {identityDocs.map((doc) => (
+                          <tr key={doc.id}>
+                            <td style={{ fontWeight: '600' }}>{doc.name}</td>
+                            <td>{doc.number}</td>
+                            <td>{doc.issueDate}</td>
+                            <td>{doc.expiryDate}</td>
+                            <td>
+                              <span className="verified-badge" style={{ display: 'inline-block' }}>{doc.status}</span>
+                            </td>
+                            <td>
+                              <button type="button" className="action-btn" title="View Document" onClick={() => alert(`Previewing ${doc.name} (${doc.number})`)}>
+                                👁️
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <div className="employment-info-banner">
+                    <span className="banner-icon">ℹ️</span>
+                    <span className="banner-text">
+                      To upload or update documents, please go to{' '}
+                      <button type="button" style={{ background: 'none', border: 'none', padding: 0, font: 'inherit', color: 'var(--primary)', textDecoration: 'underline', cursor: 'pointer', fontWeight: '600' }} onClick={() => setCurrentModule('documents')}>
+                        Documents section
+                      </button>.
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Skills */}
+              {activeProfileTab === 'Skills' && (
+                <div className="profile-emergency-shell">
+                  <div className="profile-top" style={{ borderBottom: 'none', paddingBottom: 0 }}>
+                    <div className="profile-tabs" role="tablist" aria-label="Skills sub tabs" style={{ gap: '8px' }}>
+                      {(['Skills', 'Education', 'Certifications', 'Languages'] as const).map((subTab) => (
+                        <button
+                          key={subTab}
+                          type="button"
+                          className={`profile-tab ${activeSkillsSubTab === subTab ? 'active' : ''}`}
+                          style={{ padding: '6px 12px', fontSize: '13px' }}
+                          onClick={() => setActiveSkillsSubTab(subTab)}
+                        >
+                          {subTab}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {activeSkillsSubTab === 'Skills' && (
+                    <div className="profile-card emergency-card" style={{ marginTop: '10px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                        <h3 style={{ margin: 0 }}>Skills</h3>
+                        <button type="button" className="btn btn-primary" onClick={handleOpenAddSkill}>
+                          + Add Skill
+                        </button>
+                      </div>
+                      <table className="emergency-contacts-table">
+                        <thead>
+                          <tr>
+                            <th>Skill Name</th>
+                            <th>Proficiency</th>
+                            <th>Years of Experience</th>
+                            <th>Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {profileSkills.map((skill) => (
+                            <tr key={skill.id}>
+                              <td style={{ fontWeight: '600' }}>{skill.name}</td>
+                              <td>{skill.proficiency}</td>
+                              <td>{skill.experience} yrs</td>
+                              <td className="emergency-table-actions">
+                                <button type="button" className="action-btn edit" title="Edit Skill" onClick={() => handleOpenEditSkill(skill)}>
+                                  ✏️
+                                </button>
+                                <button type="button" className="action-btn delete" title="Delete Skill" onClick={() => handleDeleteSkill(skill.id)}>
+                                  🗑️
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                          {profileSkills.length === 0 && (
+                            <tr>
+                              <td colSpan={4} className="empty-contacts-row">No skills added yet.</td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+
+                  {activeSkillsSubTab === 'Education' && (
+                    <div className="profile-card emergency-card" style={{ marginTop: '10px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                        <h3 style={{ margin: 0 }}>Education</h3>
+                        <button type="button" className="btn btn-primary" onClick={handleOpenAddEducation}>
+                          + Add Education
+                        </button>
+                      </div>
+                      <table className="emergency-contacts-table">
+                        <thead>
+                          <tr>
+                            <th>Degree</th>
+                            <th>Institution</th>
+                            <th>Field of Study</th>
+                            <th>Year of Passing</th>
+                            <th>Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {profileEducation.map((edu) => (
+                            <tr key={edu.id}>
+                              <td style={{ fontWeight: '600' }}>{edu.degree}</td>
+                              <td>{edu.institution}</td>
+                              <td>{edu.fieldOfStudy}</td>
+                              <td>{edu.yearOfPassing}</td>
+                              <td className="emergency-table-actions">
+                                <button type="button" className="action-btn edit" title="Edit Education" onClick={() => handleOpenEditEducation(edu)}>
+                                  ✏️
+                                </button>
+                                <button type="button" className="action-btn delete" title="Delete Education" onClick={() => handleDeleteEducation(edu.id)}>
+                                  🗑️
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                          {profileEducation.length === 0 && (
+                            <tr>
+                              <td colSpan={5} className="empty-contacts-row">No education records added yet.</td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+
+                  {activeSkillsSubTab === 'Certifications' && (
+                    <div className="profile-card emergency-card" style={{ marginTop: '10px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                        <h3 style={{ margin: 0 }}>Certifications</h3>
+                        <button type="button" className="btn btn-primary" onClick={handleOpenAddCertification}>
+                          + Add Certification
+                        </button>
+                      </div>
+                      <table className="emergency-contacts-table">
+                        <thead>
+                          <tr>
+                            <th>Certificate Name</th>
+                            <th>Issuing Organization</th>
+                            <th>Issue Date</th>
+                            <th>Expiry Date</th>
+                            <th>Credential ID</th>
+                            <th>Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {profileCertifications.map((cert) => (
+                            <tr key={cert.id}>
+                              <td style={{ fontWeight: '600' }}>{cert.name}</td>
+                              <td>{cert.issuingOrg}</td>
+                              <td>{cert.issueDate}</td>
+                              <td>{cert.expiryDate}</td>
+                              <td className="font-mono">{cert.credentialId}</td>
+                              <td className="emergency-table-actions">
+                                <button type="button" className="action-btn edit" title="Edit Certification" onClick={() => handleOpenEditCertification(cert)}>
+                                  ✏️
+                                </button>
+                                <button type="button" className="action-btn delete" title="Delete Certification" onClick={() => handleDeleteCertification(cert.id)}>
+                                  🗑️
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                          {profileCertifications.length === 0 && (
+                            <tr>
+                              <td colSpan={6} className="empty-contacts-row">No certifications added yet.</td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+
+                  {activeSkillsSubTab === 'Languages' && (
+                    <div className="profile-card emergency-card" style={{ marginTop: '10px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                        <h3 style={{ margin: 0 }}>Languages</h3>
+                        <button type="button" className="btn btn-primary" onClick={handleOpenAddLanguage}>
+                          + Add Language
+                        </button>
+                      </div>
+                      <table className="emergency-contacts-table">
+                        <thead>
+                          <tr>
+                            <th>Language</th>
+                            <th>Proficiency</th>
+                            <th>Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {profileLanguages.map((lang) => (
+                            <tr key={lang.id}>
+                              <td style={{ fontWeight: '600' }}>{lang.name}</td>
+                              <td>{lang.proficiency}</td>
+                              <td className="emergency-table-actions">
+                                <button type="button" className="action-btn edit" title="Edit Language" onClick={() => handleOpenEditLanguage(lang)}>
+                                  ✏️
+                                </button>
+                                <button type="button" className="action-btn delete" title="Delete Language" onClick={() => handleDeleteLanguage(lang.id)}>
+                                  🗑️
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                          {profileLanguages.length === 0 && (
+                            <tr>
+                              <td colSpan={3} className="empty-contacts-row">No languages added yet.</td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+
+                  <div className="employment-info-banner">
+                    <span className="banner-icon">ℹ️</span>
+                    <span className="banner-text">Keep your profile details updated to help us find better internal roles and opportunities.</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Preferences */}
+              {activeProfileTab === 'Preferences' && (
+                <div className="profile-personal-shell">
+                  {preferencesSaveSuccess && (
+                    <p className="submit-success" style={{ marginBottom: '14px' }}>
+                      Preferences saved successfully!
+                    </p>
+                  )}
+                  <div className="profile-personal-grid">
+                    <div className="profile-card profile-personal-info-card">
+                      <h3>System Preferences</h3>
+                      <div className="personal-form-grid" style={{ gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                        <label>
+                          Preferred Language
+                          <select
+                            value={profilePreferences.preferredLanguage}
+                            onChange={(e) => setProfilePreferences({ ...profilePreferences, preferredLanguage: e.target.value })}
+                            style={{ background: '#303057', border: '1px solid #3f3f66', color: '#fff', padding: '8px 12px', borderRadius: '6px', fontSize: '13px' }}
+                          >
+                            <option value="English">English</option>
+                            <option value="Spanish">Spanish</option>
+                            <option value="French">French</option>
+                            <option value="German">German</option>
+                          </select>
+                        </label>
+
+                        <label>
+                          Time Zone
+                          <select
+                            value={profilePreferences.timeZone}
+                            onChange={(e) => setProfilePreferences({ ...profilePreferences, timeZone: e.target.value })}
+                            style={{ background: '#303057', border: '1px solid #3f3f66', color: '#fff', padding: '8px 12px', borderRadius: '6px', fontSize: '13px' }}
+                          >
+                            <option value="(GMT+05:30) Asia/Kolkata">(GMT+05:30) Asia/Kolkata</option>
+                            <option value="(GMT-05:00) EST">(GMT-05:00) EST</option>
+                            <option value="(GMT+00:00) UTC">(GMT+00:00) UTC</option>
+                          </select>
+                        </label>
+
+                        <label>
+                          Date Format
+                          <select
+                            value={profilePreferences.dateFormat}
+                            onChange={(e) => setProfilePreferences({ ...profilePreferences, dateFormat: e.target.value })}
+                            style={{ background: '#303057', border: '1px solid #3f3f66', color: '#fff', padding: '8px 12px', borderRadius: '6px', fontSize: '13px' }}
+                          >
+                            <option value="DD MMM YYYY">DD MMM YYYY</option>
+                            <option value="YYYY-MM-DD">YYYY-MM-DD</option>
+                            <option value="MM/DD/YYYY">MM/DD/YYYY</option>
+                          </select>
+                        </label>
+
+                        <label>
+                          Time Format
+                          <select
+                            value={profilePreferences.timeFormat}
+                            onChange={(e) => setProfilePreferences({ ...profilePreferences, timeFormat: e.target.value })}
+                            style={{ background: '#303057', border: '1px solid #3f3f66', color: '#fff', padding: '8px 12px', borderRadius: '6px', fontSize: '13px' }}
+                          >
+                            <option value="12 Hour">12 Hour</option>
+                            <option value="24 Hour">24 Hour</option>
+                          </select>
+                        </label>
+                      </div>
+                    </div>
+
+                    <div className="profile-personal-sidebar">
+                      <div className="profile-card">
+                        <h3>Email Notifications</h3>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', textAlign: 'left', marginTop: '10px' }}>
+                          <label style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '10px', fontSize: '13px', cursor: 'pointer' }}>
+                            <input
+                              type="checkbox"
+                              checked={profilePreferences.emailNotifications.leaveAttendance}
+                              onChange={(e) => setProfilePreferences({
+                                ...profilePreferences,
+                                emailNotifications: { ...profilePreferences.emailNotifications, leaveAttendance: e.target.checked }
+                              })}
+                            />
+                            Leave & Attendance Updates
+                          </label>
+
+                          <label style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '10px', fontSize: '13px', cursor: 'pointer' }}>
+                            <input
+                              type="checkbox"
+                              checked={profilePreferences.emailNotifications.payslipPayroll}
+                              onChange={(e) => setProfilePreferences({
+                                ...profilePreferences,
+                                emailNotifications: { ...profilePreferences.emailNotifications, payslipPayroll: e.target.checked }
+                              })}
+                            />
+                            Payslip & Payroll Updates
+                          </label>
+
+                          <label style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '10px', fontSize: '13px', cursor: 'pointer' }}>
+                            <input
+                              type="checkbox"
+                              checked={profilePreferences.emailNotifications.companyAnnouncements}
+                              onChange={(e) => setProfilePreferences({
+                                ...profilePreferences,
+                                emailNotifications: { ...profilePreferences.emailNotifications, companyAnnouncements: e.target.checked }
+                              })}
+                            />
+                            Company Announcements
+                          </label>
+
+                          <label style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '10px', fontSize: '13px', cursor: 'pointer' }}>
+                            <input
+                              type="checkbox"
+                              checked={profilePreferences.emailNotifications.policyUpdates}
+                              onChange={(e) => setProfilePreferences({
+                                ...profilePreferences,
+                                emailNotifications: { ...profilePreferences.emailNotifications, policyUpdates: e.target.checked }
+                              })}
+                            />
+                            Policy Updates
+                          </label>
+                        </div>
+                      </div>
+
+                      <div className="profile-card" style={{ marginTop: '12px' }}>
+                        <h3>Theme</h3>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', textAlign: 'left', marginTop: '10px' }}>
+                          {(['Light', 'Dark', 'System Default'] as const).map((t) => (
+                            <label key={t} style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '10px', fontSize: '13px', cursor: 'pointer' }}>
+                              <input
+                                type="radio"
+                                name="theme"
+                                checked={profilePreferences.theme === t}
+                                onChange={() => setProfilePreferences({ ...profilePreferences, theme: t })}
+                              />
+                              {t}
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '20px' }}>
+                    <button type="button" className="btn btn-primary" onClick={handleSavePreferences}>
+                      💾 Save Preferences
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Change Requests */}
+              {activeProfileTab === 'Change Requests' && (
+                <div className="profile-personal-shell">
+                  <div className="profile-top" style={{ borderBottom: 'none', paddingBottom: 0 }}>
+                    <div className="profile-tabs" role="tablist" aria-label="Request filters" style={{ gap: '8px' }}>
+                      {(['All Requests', 'Pending', 'Approved', 'Rejected'] as const).map((filter) => (
+                        <button
+                          key={filter}
+                          type="button"
+                          className={`profile-tab ${activeChangeRequestsSubTab === filter ? 'active' : ''}`}
+                          style={{ padding: '6px 12px', fontSize: '13px' }}
+                          onClick={() => setActiveChangeRequestsSubTab(filter)}
+                        >
+                          {filter}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="profile-personal-grid" style={{ marginTop: '10px' }}>
+                    <div className="profile-card emergency-card" style={{ padding: '16px' }}>
+                      <h3>Request Audit Table</h3>
+                      <table className="emergency-contacts-table">
+                        <thead>
+                          <tr>
+                            <th>Request Type</th>
+                            <th>Description</th>
+                            <th>Requested On</th>
+                            <th>Status</th>
+                            <th>Comments</th>
+                            <th>Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {profileChangeRequests
+                            .filter((req) => {
+                              if (activeChangeRequestsSubTab === 'All Requests') return true
+                              return req.status === activeChangeRequestsSubTab
+                            })
+                            .map((req) => (
+                              <tr key={req.id}>
+                                <td style={{ fontWeight: '600' }}>{req.type}</td>
+                                <td>{req.description}</td>
+                                <td>{req.requestedDate}</td>
+                                <td>
+                                  <span className={`request-status-pill ${req.status.toLowerCase()}`}>
+                                    {req.status}
+                                  </span>
+                                </td>
+                                <td style={{ color: 'var(--muted)', fontSize: '12px' }}>{req.comments}</td>
+                                <td>
+                                  <button type="button" className="btn btn-link" style={{ padding: '4px 8px', fontSize: '12px', color: 'var(--primary)' }} onClick={() => alert(`Request ID: ${req.id}\nDetails: ${req.description}\nStatus: ${req.status}\nComments: ${req.comments}`)}>
+                                    View
+                                  </button>
+                                </td>
+                              </tr>
+                            ))}
+                          {profileChangeRequests.filter((req) => {
+                            if (activeChangeRequestsSubTab === 'All Requests') return true
+                            return req.status === activeChangeRequestsSubTab
+                          }).length === 0 && (
+                            <tr>
+                              <td colSpan={6} className="empty-contacts-row">No change requests found.</td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    <div className="profile-personal-sidebar">
+                      <div className="profile-card">
+                        <h3>How it works?</h3>
+                        <ol style={{ textAlign: 'left', paddingLeft: '16px', fontSize: '13px', display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '12px', color: 'var(--muted)' }}>
+                          <li>
+                            <strong style={{ color: 'var(--ink)' }}>Submit Request</strong>
+                            <p style={{ margin: '2px 0 0' }}>Raise a ticket for any personal or banking details change.</p>
+                          </li>
+                          <li>
+                            <strong style={{ color: 'var(--ink)' }}>HR Review</strong>
+                            <p style={{ margin: '2px 0 0' }}>The human resource managers will audit the details.</p>
+                          </li>
+                          <li>
+                            <strong style={{ color: 'var(--ink)' }}>Instant Status Update</strong>
+                            <p style={{ margin: '2px 0 0' }}>Receive alerts once the request status transitions.</p>
+                          </li>
+                        </ol>
+                        <div style={{ marginTop: '20px' }}>
+                          <button type="button" className="btn btn-primary" style={{ width: '100%' }} onClick={handleOpenRequestChange}>
+                            📝 Raise New Request
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
 
               {/* Modals */}
               {isEmergencyModalOpen && (
@@ -5118,6 +5972,308 @@ export function EmployeePortalFlow(_props: EmployeePortalFlowProps) {
                     <div className="time-modal-actions" style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '20px' }}>
                       <button type="button" className="btn" onClick={() => setIsRequestChangeModalOpen(false)}>Cancel</button>
                       <button type="button" className="btn btn-primary" onClick={handleSubmitChangeRequest}>Submit Request</button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {isBankChangeModalOpen && (
+                <div className="time-modal-backdrop" role="presentation" onClick={() => setIsBankChangeModalOpen(false)}>
+                  <div
+                    className="time-modal"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-label="Request Bank Account Change"
+                    onClick={(event) => event.stopPropagation()}
+                  >
+                    <h3>Request Bank Account Change</h3>
+                    <p style={{ fontSize: '13px', color: 'var(--muted)', marginTop: '4px' }}>Provide updated bank account credentials.</p>
+                    {bankChangeError && <p className="submit-error" style={{ margin: '10px 0' }}>{bankChangeError}</p>}
+                    <div className="leave-form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '12px', marginTop: '16px' }}>
+                      <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', textAlign: 'left' }}>
+                        Bank Name
+                        <input
+                          type="text"
+                          value={bankChangeForm.bankName}
+                          onChange={(e) => setBankChangeForm({ ...bankChangeForm, bankName: e.target.value })}
+                          placeholder="e.g. HDFC Bank"
+                          style={{ background: '#303057', border: '1px solid #3f3f66', color: '#fff', padding: '8px 12px', borderRadius: '6px' }}
+                        />
+                      </label>
+                      <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', textAlign: 'left' }}>
+                        Account Number
+                        <input
+                          type="text"
+                          value={bankChangeForm.accountNumber}
+                          onChange={(e) => setBankChangeForm({ ...bankChangeForm, accountNumber: e.target.value })}
+                          placeholder="Enter account number"
+                          style={{ background: '#303057', border: '1px solid #3f3f66', color: '#fff', padding: '8px 12px', borderRadius: '6px' }}
+                        />
+                      </label>
+                      <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', textAlign: 'left' }}>
+                        IFSC Code
+                        <input
+                          type="text"
+                          value={bankChangeForm.ifscCode}
+                          onChange={(e) => setBankChangeForm({ ...bankChangeForm, ifscCode: e.target.value })}
+                          placeholder="Enter IFSC code"
+                          style={{ background: '#303057', border: '1px solid #3f3f66', color: '#fff', padding: '8px 12px', borderRadius: '6px' }}
+                        />
+                      </label>
+                      <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', textAlign: 'left' }}>
+                        Account Holder Name
+                        <input
+                          type="text"
+                          value={bankChangeForm.accountHolderName}
+                          onChange={(e) => setBankChangeForm({ ...bankChangeForm, accountHolderName: e.target.value })}
+                          placeholder="John Doe"
+                          style={{ background: '#303057', border: '1px solid #3f3f66', color: '#fff', padding: '8px 12px', borderRadius: '6px' }}
+                        />
+                      </label>
+                      <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', textAlign: 'left' }}>
+                        Reason for Update
+                        <textarea
+                          rows={3}
+                          value={bankChangeForm.reason}
+                          onChange={(e) => setBankChangeForm({ ...bankChangeForm, reason: e.target.value })}
+                          placeholder="Why are you updating your bank details?"
+                          style={{ background: '#303057', border: '1px solid #3f3f66', color: '#fff', padding: '8px 12px', borderRadius: '6px', resize: 'none' }}
+                        />
+                      </label>
+                    </div>
+                    <div className="time-modal-actions" style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '20px' }}>
+                      <button type="button" className="btn" onClick={() => setIsBankChangeModalOpen(false)}>Cancel</button>
+                      <button type="button" className="btn btn-primary" onClick={handleSaveBankChange}>Submit</button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {isSkillModalOpen && (
+                <div className="time-modal-backdrop" role="presentation" onClick={() => setIsSkillModalOpen(false)}>
+                  <div
+                    className="time-modal"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-label={`${skillModalMode === 'add' ? 'Add' : 'Edit'} Skill`}
+                    onClick={(event) => event.stopPropagation()}
+                  >
+                    <h3>{skillModalMode === 'add' ? 'Add Skill' : 'Edit Skill'}</h3>
+                    {skillError && <p className="submit-error" style={{ margin: '10px 0' }}>{skillError}</p>}
+                    <div className="leave-form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '12px', marginTop: '16px' }}>
+                      <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', textAlign: 'left' }}>
+                        Skill Name
+                        <input
+                          type="text"
+                          value={skillForm.name}
+                          onChange={(e) => setSkillForm({ ...skillForm, name: e.target.value })}
+                          placeholder="e.g. JavaScript"
+                          style={{ background: '#303057', border: '1px solid #3f3f66', color: '#fff', padding: '8px 12px', borderRadius: '6px' }}
+                        />
+                      </label>
+                      <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', textAlign: 'left' }}>
+                        Proficiency
+                        <select
+                          value={skillForm.proficiency}
+                          onChange={(e) => setSkillForm({ ...skillForm, proficiency: e.target.value as any })}
+                          style={{ background: '#303057', border: '1px solid #3f3f66', color: '#fff', padding: '8px 12px', borderRadius: '6px' }}
+                        >
+                          <option value="Beginner">Beginner</option>
+                          <option value="Intermediate">Intermediate</option>
+                          <option value="Advanced">Advanced</option>
+                          <option value="Expert">Expert</option>
+                        </select>
+                      </label>
+                      <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', textAlign: 'left' }}>
+                        Years of Experience
+                        <input
+                          type="number"
+                          value={skillForm.experience}
+                          onChange={(e) => setSkillForm({ ...skillForm, experience: Number(e.target.value) })}
+                          style={{ background: '#303057', border: '1px solid #3f3f66', color: '#fff', padding: '8px 12px', borderRadius: '6px' }}
+                        />
+                      </label>
+                    </div>
+                    <div className="time-modal-actions" style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '20px' }}>
+                      <button type="button" className="btn" onClick={() => setIsSkillModalOpen(false)}>Cancel</button>
+                      <button type="button" className="btn btn-primary" onClick={handleSaveSkill}>Save</button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {isEducationModalOpen && (
+                <div className="time-modal-backdrop" role="presentation" onClick={() => setIsEducationModalOpen(false)}>
+                  <div
+                    className="time-modal"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-label={`${educationModalMode === 'add' ? 'Add' : 'Edit'} Education`}
+                    onClick={(event) => event.stopPropagation()}
+                  >
+                    <h3>{educationModalMode === 'add' ? 'Add Education' : 'Edit Education'}</h3>
+                    {educationError && <p className="submit-error" style={{ margin: '10px 0' }}>{educationError}</p>}
+                    <div className="leave-form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '12px', marginTop: '16px' }}>
+                      <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', textAlign: 'left' }}>
+                        Degree
+                        <input
+                          type="text"
+                          value={educationForm.degree}
+                          onChange={(e) => setEducationForm({ ...educationForm, degree: e.target.value })}
+                          placeholder="e.g. Bachelor of Engineering"
+                          style={{ background: '#303057', border: '1px solid #3f3f66', color: '#fff', padding: '8px 12px', borderRadius: '6px' }}
+                        />
+                      </label>
+                      <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', textAlign: 'left' }}>
+                        Institution
+                        <input
+                          type="text"
+                          value={educationForm.institution}
+                          onChange={(e) => setEducationForm({ ...educationForm, institution: e.target.value })}
+                          placeholder="e.g. VTU"
+                          style={{ background: '#303057', border: '1px solid #3f3f66', color: '#fff', padding: '8px 12px', borderRadius: '6px' }}
+                        />
+                      </label>
+                      <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', textAlign: 'left' }}>
+                        Field of Study
+                        <input
+                          type="text"
+                          value={educationForm.fieldOfStudy}
+                          onChange={(e) => setEducationForm({ ...educationForm, fieldOfStudy: e.target.value })}
+                          placeholder="e.g. Computer Science"
+                          style={{ background: '#303057', border: '1px solid #3f3f66', color: '#fff', padding: '8px 12px', borderRadius: '6px' }}
+                        />
+                      </label>
+                      <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', textAlign: 'left' }}>
+                        Year of Passing
+                        <input
+                          type="text"
+                          value={educationForm.yearOfPassing}
+                          onChange={(e) => setEducationForm({ ...educationForm, yearOfPassing: e.target.value })}
+                          placeholder="e.g. 2014"
+                          style={{ background: '#303057', border: '1px solid #3f3f66', color: '#fff', padding: '8px 12px', borderRadius: '6px' }}
+                        />
+                      </label>
+                    </div>
+                    <div className="time-modal-actions" style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '20px' }}>
+                      <button type="button" className="btn" onClick={() => setIsEducationModalOpen(false)}>Cancel</button>
+                      <button type="button" className="btn btn-primary" onClick={handleSaveEducation}>Save</button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {isCertificationModalOpen && (
+                <div className="time-modal-backdrop" role="presentation" onClick={() => setIsCertificationModalOpen(false)}>
+                  <div
+                    className="time-modal"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-label={`${certificationModalMode === 'add' ? 'Add' : 'Edit'} Certification`}
+                    onClick={(event) => event.stopPropagation()}
+                  >
+                    <h3>{certificationModalMode === 'add' ? 'Add Certification' : 'Edit Certification'}</h3>
+                    {certificationError && <p className="submit-error" style={{ margin: '10px 0' }}>{certificationError}</p>}
+                    <div className="leave-form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '12px', marginTop: '16px' }}>
+                      <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', textAlign: 'left' }}>
+                        Certification Name
+                        <input
+                          type="text"
+                          value={certificationForm.name}
+                          onChange={(e) => setCertificationForm({ ...certificationForm, name: e.target.value })}
+                          placeholder="e.g. AWS Solutions Architect"
+                          style={{ background: '#303057', border: '1px solid #3f3f66', color: '#fff', padding: '8px 12px', borderRadius: '6px' }}
+                        />
+                      </label>
+                      <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', textAlign: 'left' }}>
+                        Issuing Organization
+                        <input
+                          type="text"
+                          value={certificationForm.issuingOrg}
+                          onChange={(e) => setCertificationForm({ ...certificationForm, issuingOrg: e.target.value })}
+                          placeholder="e.g. Amazon Web Services"
+                          style={{ background: '#303057', border: '1px solid #3f3f66', color: '#fff', padding: '8px 12px', borderRadius: '6px' }}
+                        />
+                      </label>
+                      <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', textAlign: 'left' }}>
+                        Issue Date
+                        <input
+                          type="text"
+                          value={certificationForm.issueDate}
+                          onChange={(e) => setCertificationForm({ ...certificationForm, issueDate: e.target.value })}
+                          placeholder="e.g. 12 Dec 2024"
+                          style={{ background: '#303057', border: '1px solid #3f3f66', color: '#fff', padding: '8px 12px', borderRadius: '6px' }}
+                        />
+                      </label>
+                      <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', textAlign: 'left' }}>
+                        Expiry Date
+                        <input
+                          type="text"
+                          value={certificationForm.expiryDate}
+                          onChange={(e) => setCertificationForm({ ...certificationForm, expiryDate: e.target.value })}
+                          placeholder="e.g. 12 Dec 2027 or -"
+                          style={{ background: '#303057', border: '1px solid #3f3f66', color: '#fff', padding: '8px 12px', borderRadius: '6px' }}
+                        />
+                      </label>
+                      <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', textAlign: 'left' }}>
+                        Credential ID
+                        <input
+                          type="text"
+                          value={certificationForm.credentialId}
+                          onChange={(e) => setCertificationForm({ ...certificationForm, credentialId: e.target.value })}
+                          placeholder="e.g. AWS-12345 or -"
+                          style={{ background: '#303057', border: '1px solid #3f3f66', color: '#fff', padding: '8px 12px', borderRadius: '6px' }}
+                        />
+                      </label>
+                    </div>
+                    <div className="time-modal-actions" style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '20px' }}>
+                      <button type="button" className="btn" onClick={() => setIsCertificationModalOpen(false)}>Cancel</button>
+                      <button type="button" className="btn btn-primary" onClick={handleSaveCertification}>Save</button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {isLanguageModalOpen && (
+                <div className="time-modal-backdrop" role="presentation" onClick={() => setIsLanguageModalOpen(false)}>
+                  <div
+                    className="time-modal"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-label={`${languageModalMode === 'add' ? 'Add' : 'Edit'} Language`}
+                    onClick={(event) => event.stopPropagation()}
+                  >
+                    <h3>{languageModalMode === 'add' ? 'Add Language' : 'Edit Language'}</h3>
+                    {languageError && <p className="submit-error" style={{ margin: '10px 0' }}>{languageError}</p>}
+                    <div className="leave-form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '12px', marginTop: '16px' }}>
+                      <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', textAlign: 'left' }}>
+                        Language Name
+                        <input
+                          type="text"
+                          value={languageForm.name}
+                          onChange={(e) => setLanguageForm({ ...languageForm, name: e.target.value })}
+                          placeholder="e.g. English"
+                          style={{ background: '#303057', border: '1px solid #3f3f66', color: '#fff', padding: '8px 12px', borderRadius: '6px' }}
+                        />
+                      </label>
+                      <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', textAlign: 'left' }}>
+                        Proficiency
+                        <select
+                          value={languageForm.proficiency}
+                          onChange={(e) => setLanguageForm({ ...languageForm, proficiency: e.target.value as any })}
+                          style={{ background: '#303057', border: '1px solid #3f3f66', color: '#fff', padding: '8px 12px', borderRadius: '6px' }}
+                        >
+                          <option value="Beginner">Beginner</option>
+                          <option value="Conversational">Conversational</option>
+                          <option value="Professional">Professional</option>
+                          <option value="Fluent">Fluent</option>
+                          <option value="Native / Bilingual">Native / Bilingual</option>
+                        </select>
+                      </label>
+                    </div>
+                    <div className="time-modal-actions" style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '20px' }}>
+                      <button type="button" className="btn" onClick={() => setIsLanguageModalOpen(false)}>Cancel</button>
+                      <button type="button" className="btn btn-primary" onClick={handleSaveLanguage}>Save</button>
                     </div>
                   </div>
                 </div>

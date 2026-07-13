@@ -1775,3 +1775,38 @@ button{font:inherit}
   color: var(--muted);
 }
 
+/* Preferences & Links Styles */
+.personal-form-grid select {
+  background: #303057;
+  border: 1px solid #3f3f66;
+  color: #fff;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  width: 100%;
+}
+
+.personal-form-grid select:focus {
+  outline: 2px solid var(--primary);
+}
+
+.btn-link {
+  appearance: none;
+  background: none;
+  border: none;
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--primary);
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0;
+  transition: opacity 0.15s ease;
+}
+
+.btn-link:hover {
+  opacity: 0.8;
+}
+
+
